@@ -10,6 +10,11 @@ plugins {
     id("org.openjfx.javafxplugin") version "0.0.14"
 }
 
+group = "com.dakkra"
+version = "0.0.1"
+description = "hypersynesthesia"
+java.sourceCompatibility = JavaVersion.VERSION_17
+
 repositories {
     mavenCentral()
     mavenLocal()
@@ -24,11 +29,6 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.26")
     compileOnly("com.avereon:xenon:[1.7-SNAPSHOT,)")
 }
-
-group = "com.dakkra"
-version = "0.0.1"
-description = "hypersynesthesia"
-java.sourceCompatibility = JavaVersion.VERSION_17
 
 java {
     withSourcesJar()
