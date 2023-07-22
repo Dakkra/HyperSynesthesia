@@ -7,11 +7,8 @@
 plugins {
     `java-library`
     `maven-publish`
-    id("application")
     id("org.openjfx.javafxplugin") version "0.0.14"
 }
-
-application.mainClass.set("com.dakkra.hypersynesthesia.HyperSynesthesia")
 
 repositories {
     mavenCentral()
@@ -37,11 +34,11 @@ java {
     withSourcesJar()
     withJavadocJar()
 }
+
 javafx {
     version = "17"
     modules("javafx.web", "javafx.swing", "javafx.fxml", "javafx.graphics", "javafx.controls")
 }
-
 
 //publishing {
 //    publications.create<MavenPublication>("maven") {
