@@ -39,7 +39,7 @@ java {
 }
 javafx {
     version = "17"
-    modules = listOf("javafx.web", "javafx.swing", "javafx.fxml", "javafx.graphics", "javafx.controls")
+    modules("javafx.web", "javafx.swing", "javafx.fxml", "javafx.graphics", "javafx.controls")
 }
 
 
