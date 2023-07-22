@@ -1,0 +1,28 @@
+{
+  "group": "${project.groupId}",
+  "artifact": "${project.artifactId}",
+  "version": "${project.version}",
+  "timestamp": "${project.timestamp}",
+  "packaging": "mod",
+  "icons": [ "${project.artifactId}", "<https://www.avereon.com/download/stable/avereon/provider/icon>" ],
+  "name": "${project.name}",
+  "provider": "${project.organization.name}",
+  "providerUrl": "${project.organization.url}",
+  "inception": "${project.inceptionYear}",
+  "summary": "A mod to create videos based on audio input",
+  "description": "${project.description}",
+  "copyrightSummary": "(c) 2023 Christopher M. Soderquist",
+  "licenseSummary": "${project.name} is under the GPL v3 license",
+  "javaVersion": "11",
+  "maintainers": [
+  {
+    "name": "Christopher Soderquist",
+    "email": "contact@dakkra.com",
+    "timezone": "MDT",
+    "organization": "Dakkra Studio LLC",
+    "organizationUrl": "https://dakkra.com",
+    "roles": [<"Architect", "Developer">]
+  }
+  ],
+  "contributors": []
+}
