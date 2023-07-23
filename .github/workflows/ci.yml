@@ -8,8 +8,11 @@ on:
   workflow_dispatch:
 
 env:
+  DISPLAY: ":99"
   JAVA_DISTRO: "temurin"
   JAVA_VERSION: "17"
+  MAVEN_PARMS: "-B -U -V --settings .github/settings.xml --file pom.xml"
+  XVFB_PARMS: "-screen 0 1920x1080x24 -nolisten unix"
 
 permissions:
   actions: read
@@ -48,9 +51,17 @@ jobs:
         with:
           languages: java
 
+#      - name: Build
+#        run: |
+#          ./gradlew build
+
       - name: Compile
         run: |
-          ./gradlew build
+          mvn ${{env.MAVEN_PARMS}} compile
+
+      - name: Unit Tests
+        run: |
+          mvn ${{env.MAVEN_PARMS}} test
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
