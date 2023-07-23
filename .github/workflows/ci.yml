@@ -11,7 +11,7 @@ env:
   DISPLAY: ":99"
   JAVA_DISTRO: "temurin"
   JAVA_VERSION: "17"
-  MAVEN_PARMS: "-B -U -V --settings .github/settings.xml --file pom.xml"
+  MAVEN_PARMS: "-B -U -V"
   XVFB_PARMS: "-screen 0 1920x1080x24 -nolisten unix"
 
 permissions:
