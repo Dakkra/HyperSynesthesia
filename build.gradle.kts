@@ -24,10 +24,11 @@ repositories {
 }
 
 dependencies {
+    annotationProcessor("org.projectlombok:lombok:1.18.28")
+    compileOnly("com.avereon:xenon:[1.7-SNAPSHOT,)")
+    compileOnly("org.projectlombok:lombok:1.18.26")
     testImplementation("org.assertj:assertj-core:[3.24,)")
     testImplementation("org.junit.jupiter:junit-jupiter:[5.9,)")
-    compileOnly("org.projectlombok:lombok:1.18.26")
-    compileOnly("com.avereon:xenon:[1.7-SNAPSHOT,)")
 }
 
 java {
