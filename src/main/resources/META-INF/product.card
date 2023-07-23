@@ -21,7 +21,7 @@
     "timezone": "MDT",
     "organization": "Dakkra Studio LLC",
     "organizationUrl": "https://dakkra.com",
-    "roles": [<"Architect", "Developer">]
+    "roles": ["Architect", "Developer"]
   }
   ],
   "contributors": []
