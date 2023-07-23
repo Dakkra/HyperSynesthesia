@@ -5,4 +5,5 @@ module com.dakkra.hypersynthesthesia {
 	requires static lombok;
 	exports com.dakkra.hypersynesthesia to com.avereon.xenon;
 	provides com.avereon.xenon.Mod with HyperSynesthesia;
+	opens com.dakkra.hypersynesthesia to org.testfx.junit5;
 }
