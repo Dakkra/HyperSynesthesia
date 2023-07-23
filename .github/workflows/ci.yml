@@ -11,6 +11,11 @@ env:
   JAVA_DISTRO: "temurin"
   JAVA_VERSION: "17"
 
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
 jobs:
   build:
     name: Build
