@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+				 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.avereon.pom</groupId>
+		<artifactId>mod</artifactId>
+		<version>3.5.3</version>
+	</parent>
+
+	<groupId>com.dakkra</groupId>
+	<artifactId>hypersynesthesia</artifactId>
+	<version>0.0.1</version>
+	<packaging>jar</packaging>
+
+	<name>HyperSynesthesia</name>
+	<description></description>
+	<inceptionYear>2023</inceptionYear>
+
+	<repositories>
+		<repository>
+			<id>avn</id>
+			<url>https://repo.avereon.com/avn</url>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>avn</id>
+			<url>https://repo.avereon.com/avn</url>
+		</pluginRepository>
+	</pluginRepositories>
+
+	<properties>
+		<!-- Version numbers updated 22 Jul 2023 -->
+		<xenon.version>[1.7-SNAPSHOT,)</xenon.version>
+		<zerra.version>[0.9-SNAPSHOT,)</zerra.version>
+		<monocle.version>jdk-12.0.1+2</monocle.version>
+		<cameo.version>2.10</cameo.version>
+		<images-folder>target/main/images</images-folder>
+	</properties>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>com.avereon</groupId>
+			<artifactId>zerra</artifactId>
+			<version>${zerra.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testfx</groupId>
+			<artifactId>openjfx-monocle</artifactId>
+			<version>${monocle.version}</version>
+			<scope>test</scope>
+			<exclusions>
+				<!-- Exclude the openjfx libraries, they are already available -->
+				<exclusion>
+					<groupId>org.openjfx</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<sourceDirectory>src/main/java</sourceDirectory>
+		<testSourceDirectory>src/test/java</testSourceDirectory>
+
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
+
+		<testResources>
+			<testResource>
+				<directory>src/test/resources</directory>
+			</testResource>
+		</testResources>
+
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>17</source>
+					<target>17</target>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<!-- Version comes from parent -->
+				<configuration>
+					<forkCount>1</forkCount>
+					<reuseForks>false</reuseForks>
+					<argLine>-Xmx128m --add-opens=javafx.graphics/com.sun.glass.ui=ALL-UNNAMED --add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED </argLine>
+<!--									<systemPropertyVariables>-->
+<!--										&lt;!&ndash; Set testfx.setup.timeout to a reasonable time &ndash;&gt;-->
+<!--										&lt;!&ndash; This might be as low as 1000 for a fast computer &ndash;&gt;-->
+<!--										&lt;!&ndash; This might be as high as 5000 for a slow computer &ndash;&gt;-->
+<!--										<testfx.setup.timeout>5000</testfx.setup.timeout>-->
+<!--										&lt;!&ndash; Set testfx.headless to true to run FX tests in headless mode &ndash;&gt;-->
+<!--										<testfx.headless>true</testfx.headless>-->
+<!--										&lt;!&ndash; Set testfx.robot to glass when running tests in headless mode &ndash;&gt;-->
+<!--										<testfx.robot>glass</testfx.robot>-->
+<!--										&lt;!&ndash; Set prism.order to sw when running tests in headless mode &ndash;&gt;-->
+<!--										&lt;!&ndash; https://wiki.openjdk.java.net/display/OpenJFX/Monocle &ndash;&gt;-->
+<!--										<prism.order>sw</prism.order>-->
+<!--										&lt;!&ndash; Not sure what this setting does but it's in all the examples found &ndash;&gt;-->
+<!--										<prism.text>t2k</prism.text>-->
+<!--										&lt;!&ndash; Set java.awt.headless to true when running tests in headless mode &ndash;&gt;-->
+<!--										<java.awt.headless>true</java.awt.headless>-->
+<!--									</systemPropertyVariables>-->
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>testui</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-failsafe-plugin</artifactId>
+						<!-- Version comes from parent -->
+						<executions>
+							<execution>
+								<id>testui</id>
+								<goals>
+									<goal>integration-test</goal>
+									<goal>verify</goal>
+								</goals>
+								<configuration>
+									<forkCount>1</forkCount>
+									<reuseForks>false</reuseForks>
+									<runOrder>alphabetical</runOrder>
+									<argLine>-Xmx128m --add-opens=javafx.graphics/com.sun.glass.ui=ALL-UNNAMED --add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED </argLine>
+<!--									<systemPropertyVariables>-->
+<!--										&lt;!&ndash; Set testfx.setup.timeout to a reasonable time &ndash;&gt;-->
+<!--										&lt;!&ndash; This might be as low as 1000 for a fast computer &ndash;&gt;-->
+<!--										&lt;!&ndash; This might be as high as 5000 for a slow computer &ndash;&gt;-->
+<!--										<testfx.setup.timeout>5000</testfx.setup.timeout>-->
+<!--										&lt;!&ndash; Set testfx.headless to true to run FX tests in headless mode &ndash;&gt;-->
+<!--										<testfx.headless>true</testfx.headless>-->
+<!--										&lt;!&ndash; Set testfx.robot to glass when running tests in headless mode &ndash;&gt;-->
+<!--										<testfx.robot>glass</testfx.robot>-->
+<!--										&lt;!&ndash; Set prism.order to sw when running tests in headless mode &ndash;&gt;-->
+<!--										&lt;!&ndash; https://wiki.openjdk.java.net/display/OpenJFX/Monocle &ndash;&gt;-->
+<!--										<prism.order>sw</prism.order>-->
+<!--										&lt;!&ndash; Not sure what this setting does but it's in all the examples found &ndash;&gt;-->
+<!--										<prism.text>t2k</prism.text>-->
+<!--										&lt;!&ndash; Set java.awt.headless to true when running tests in headless mode &ndash;&gt;-->
+<!--										<java.awt.headless>true</java.awt.headless>-->
+<!--									</systemPropertyVariables>-->
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<profile>
+			<id>packs</id>
+			<build>
+				<plugins>
+<!--					<plugin>-->
+<!--						<groupId>com.avereon</groupId>-->
+<!--						<artifactId>cameo</artifactId>-->
+<!--						<version>${cameo.version}</version>-->
+<!--						<executions>-->
+<!--							<execution>-->
+<!--								<id>render</id>-->
+<!--								<phase>prepare-package</phase>-->
+<!--								<goals>-->
+<!--									<goal>render</goal>-->
+<!--								</goals>-->
+<!--								<configuration>-->
+<!--									<images>-->
+<!--										<image>-->
+<!--											<class>com.avereon.cartesia.icon.CartesiaIcon</class>-->
+<!--											<target>${images-folder}/product.png</target>-->
+<!--											<theme>light</theme>-->
+<!--										</image>-->
+<!--									</images>-->
+<!--								</configuration>-->
+<!--							</execution>-->
+<!--						</executions>-->
+<!--					</plugin>-->
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+</project>

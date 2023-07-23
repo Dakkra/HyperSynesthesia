@@ -8,8 +8,11 @@ on:
   workflow_dispatch:
 
 env:
+  DISPLAY: ":99"
   JAVA_DISTRO: "temurin"
   JAVA_VERSION: "17"
+  MAVEN_PARMS: "-B -U -V"
+  XVFB_PARMS: "-screen 0 1920x1080x24 -nolisten unix"
 
 permissions:
   actions: read
@@ -39,18 +42,26 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle.kts') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-maven-
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
           languages: java
 
+#      - name: Build
+#        run: |
+#          ./gradlew build
+
       - name: Compile
         run: |
-          ./gradlew build
+          mvn ${{env.MAVEN_PARMS}} compile
+
+      - name: Unit Tests
+        run: |
+          mvn ${{env.MAVEN_PARMS}} test
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
