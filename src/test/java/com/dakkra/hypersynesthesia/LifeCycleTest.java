@@ -2,12 +2,18 @@ package com.dakkra.hypersynesthesia;
 
 import com.avereon.product.ProductCard;
 import com.avereon.xenon.ModStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class LifeCycleTest extends HyperSynesthesiaTest{
+
+	@BeforeEach
+	void init() {
+		initMod( ProductCard.card( HyperSynesthesia.class ) );
+	}
 
 	@Test
 	void testModLfeCycle() {
@@ -22,19 +28,16 @@ public class LifeCycleTest extends HyperSynesthesiaTest{
 
 	@Test
 	void testModHasCardInfo() {
-		initMod( ProductCard.card( HyperSynesthesia.class ) );
 		assertNotNull( getMod().getCard() );
 	}
 
 	@Test
 	void testModCardName() {
-		initMod( ProductCard.card( HyperSynesthesia.class ) );
 		assertEquals( "HyperSynesthesia", getMod().getCard().getName() );
 	}
 
   @Test
 	void testModCardArtifact() {
-		initMod( ProductCard.card( HyperSynesthesia.class ) );
 		assertEquals( "hypersynesthesia", getMod().getCard().getArtifact() );
 	}
 }
