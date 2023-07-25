@@ -66,3 +66,13 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
 
+      - name: Get Project Version
+        id: get_version
+        run: |
+          echo "RELEASE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: hypersynesthesia-${{env.RELEASE_VERSION}}.jar
+          path: target/hypersynesthesia-${{env.RELEASE_VERSION}}.jar
