@@ -51,10 +51,6 @@ jobs:
         with:
           languages: java
 
-#      - name: Build
-#        run: |
-#          ./gradlew build
-
       - name: Compile
         run: |
           mvn ${{env.MAVEN_PARMS}} compile
@@ -62,6 +58,10 @@ jobs:
       - name: Unit Tests
         run: |
           mvn ${{env.MAVEN_PARMS}} test
+          
+      - name: Package
+        run: |
+          mvn ${{env.MAVEN_PARMS}} package
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
