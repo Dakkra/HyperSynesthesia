@@ -69,7 +69,7 @@ jobs:
       - name: Get Project Version
         id: get_version
         run: |
-          echo "RELEASE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)"
+          echo "RELEASE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
 
       - name: Upload Artifact
         if: github.ref == 'refs/heads/main'
