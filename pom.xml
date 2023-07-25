@@ -13,11 +13,11 @@
 
 	<groupId>com.dakkra</groupId>
 	<artifactId>hypersynesthesia</artifactId>
-	<version>0.0.1</version>
+	<version>0.0.2</version>
 	<packaging>jar</packaging>
 
 	<name>HyperSynesthesia</name>
-	<description></description>
+	<description>Application to generate video from audio</description>
 	<inceptionYear>2023</inceptionYear>
 
 	<repositories>
