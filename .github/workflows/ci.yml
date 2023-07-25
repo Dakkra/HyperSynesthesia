@@ -72,6 +72,7 @@ jobs:
           echo "RELEASE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)"
 
       - name: Upload Artifact
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v3
         with:
           name: hypersynesthesia-${{env.RELEASE_VERSION}}.jar
