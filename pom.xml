@@ -16,6 +16,11 @@
 	<version>0.0.2</version>
 	<packaging>jar</packaging>
 
+	<organization>
+		<name>Dakkra Studio LLC</name>
+		<url>https://hypersynesthesia.com</url>
+	</organization>
+
 	<name>HyperSynesthesia</name>
 	<description>Application to generate video from audio</description>
 	<inceptionYear>2023</inceptionYear>
