@@ -1,6 +1,7 @@
 package com.dakkra.hypersynesthesia;
 
 import com.avereon.xenon.Mod;
+import com.avereon.xenon.ToolRegistration;
 import lombok.CustomLog;
 
 @CustomLog
@@ -24,6 +25,9 @@ public class HyperSynesthesia extends Mod {
 		log.atInfo().log( "Initializing HyperSynesthesia");
 
 		registerAssetType( projectAssetType );
+		ToolRegistration registration = new ToolRegistration( this, HyperSynesthesiaTool.class);
+		registration.setName( "HyperSynestheisa Tool" );
+		registerTool( projectAssetType, registration );
 	}
 
 	@Override
@@ -31,6 +35,7 @@ public class HyperSynesthesia extends Mod {
 		super.shutdown();
 		log.atInfo().log( "Closing HyperSynesthesia");
 
+		unregisterTool( projectAssetType, HyperSynesthesiaTool.class );
 		unregisterAssetType( projectAssetType );
 	}
 
