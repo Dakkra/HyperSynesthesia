@@ -6,6 +6,12 @@ import lombok.CustomLog;
 @CustomLog
 public class HyperSynesthesia extends Mod {
 
+	private final ProjectAssetType projectAssetType;
+
+	public HyperSynesthesia() {
+		projectAssetType = new ProjectAssetType( this );
+	}
+
 	@Override
 	public void register() {
 		super.register();
@@ -16,12 +22,16 @@ public class HyperSynesthesia extends Mod {
 	public void startup() throws Exception {
 		super.startup();
 		log.atInfo().log( "Initializing HyperSynesthesia");
+
+		registerAssetType( projectAssetType );
 	}
 
 	@Override
 	public void shutdown() throws Exception {
 		super.shutdown();
 		log.atInfo().log( "Closing HyperSynesthesia");
+
+		unregisterAssetType( projectAssetType );
 	}
 
 	@Override
