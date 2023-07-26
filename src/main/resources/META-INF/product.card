@@ -13,7 +13,7 @@
   "description": "${project.description}",
   "copyrightSummary": "(c) 2023 Christopher M. Soderquist",
   "licenseSummary": "${project.name} is under the GPL v3 license",
-  "javaVersion": "11",
+  "javaVersion": "17",
   "maintainers": [
   {
     "name": "Christopher Soderquist",
