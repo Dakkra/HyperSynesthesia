@@ -10,6 +10,9 @@ import javafx.scene.layout.Pane;
 
 public class HyperSynesthesiaTool extends GuidedTool {
 
+	private final double MIN_SCALE = 0.05;
+	private final double MAX_SCALE = 5.0;
+
 	private final Pane pane;
 
 	private double lastX;
@@ -20,7 +23,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		super( product, asset );
 
 		pane = new Pane();
-		Label name = new Label( "Test" );
+		Label name = new Label( "HyperSynesthesia" );
 		name.setStyle( "-fx-font-size: 5cm" + "; -fx-font-weight: bold" + "; -fx-text-fill: #000000;" );
 		pane.getChildren().add( name );
 
@@ -28,8 +31,9 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		pane.setMaxSize( 1920, 1080 );
 		pane.setMinSize( 1920, 1080 );
 
-		pane.setScaleX( 0.5 );
-		pane.setScaleY( 0.5 );
+		double DEFAULT_SCALE = 0.5;
+		pane.setScaleX( DEFAULT_SCALE );
+		pane.setScaleY( DEFAULT_SCALE );
 
 		this.setOnScroll( ( ScrollEvent event ) -> {
 
@@ -41,7 +45,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 			} else {
 				scale /= 1.1;
 			}
-			scale = clamp( scale, 0.5, 2.0 );
+			scale = clamp( scale, MIN_SCALE, MAX_SCALE );
 
 			double f = (scale / oldscale) - 1;
 
