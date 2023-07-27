@@ -6,11 +6,15 @@ import com.avereon.xenon.tool.guide.GuidedTool;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
+import lombok.CustomLog;
 
+@CustomLog
 public class HyperSynesthesiaTool extends GuidedTool {
 
 	private final double MIN_SCALE = 0.05;
+
 	private final double MAX_SCALE = 5.0;
 
 	private final Pane pane;
@@ -35,7 +39,14 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		pane.setScaleX( DEFAULT_SCALE );
 		pane.setScaleY( DEFAULT_SCALE );
 
-		this.setOnScroll( ( ScrollEvent event ) -> {
+		Pane container = new Pane( pane );
+
+		BorderPane borderPane = new BorderPane( container, new Label( "Top" ), new Label( "Right" ), new Label( "Bottom" ), new Label( "Left" ) );
+
+		borderPane.setStyle( "-fx-background-color: blue;" );
+
+		container.setOnScroll( ( ScrollEvent event ) -> {
+			if( Math.abs( event.getDeltaY() ) <= 0.0 ) return;
 
 			double scale = pane.getScaleX();
 			double oldscale = scale;
@@ -59,12 +70,12 @@ public class HyperSynesthesiaTool extends GuidedTool {
 			pane.setTranslateY( pane.getTranslateY() - f * deltaY );
 		} );
 
-		this.setOnMouseDragEntered( ( MouseEvent event ) -> {
+		container.setOnMouseDragEntered( ( MouseEvent event ) -> {
 			lastX = event.getX();
 			lastY = event.getY();
 		} );
 
-		this.setOnMouseDragged( ( MouseEvent event ) -> {
+		container.setOnMouseDragged( ( MouseEvent event ) -> {
 			double deltaX = event.getX() - lastX;
 			double deltaY = event.getY() - lastY;
 			pane.setTranslateX( pane.getTranslateX() + deltaX );
@@ -73,12 +84,12 @@ public class HyperSynesthesiaTool extends GuidedTool {
 			lastY = event.getY();
 		} );
 
-		this.setOnMouseMoved( ( MouseEvent event ) -> {
+		container.setOnMouseMoved( ( MouseEvent event ) -> {
 			lastX = event.getX();
 			lastY = event.getY();
 		} );
 
-		this.getChildren().add( pane );
+		this.getChildren().add( borderPane );
 	}
 
 	public static double clamp( double value, double min, double max ) {
@@ -89,4 +100,5 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		return value;
 	}
+
 }
