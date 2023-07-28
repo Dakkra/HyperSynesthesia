@@ -159,12 +159,14 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		return value;
 	}
 
-	private BufferedImage renderBufferedImaged() {
+	private void renderBufferedImaged() {
+		renderPane.setScaleX( 1.0 );
+		renderPane.setScaleY( 1.0 );
 		WritableImage image = renderPane.snapshot( new SnapshotParameters(), null );
 		buffer = new BufferedImage( dimX, dimY, BufferedImage.TYPE_3BYTE_BGR );
-		SwingFXUtils.fromFXImage( image, buffer );
-		return buffer;
-
+		BufferedImage base = SwingFXUtils.fromFXImage( image, null );
+		buffer.getGraphics().drawImage( base, 0, 0, null );
+		buffer.getGraphics().dispose();
 	}
 
 	private void loadMusicFile() {
@@ -178,11 +180,11 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle( "Export Video" );
 
-		buffer = renderBufferedImaged();
+		renderBufferedImaged();
 
 		File file = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
-		FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addOutput( UrlOutput.toUrl( file.toURI().toString() ) ).execute();
+		FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).execute();
 	}
 
 }
