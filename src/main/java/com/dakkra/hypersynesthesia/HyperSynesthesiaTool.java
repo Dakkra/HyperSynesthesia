@@ -30,7 +30,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 	private final double MAX_SCALE = 5.0;
 
-	private final Pane renderPane;
+	private final RenderPane renderPane;
 
 	private double lastX;
 
@@ -40,16 +40,18 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 	private int dimY = 1080;
 
-	private FrameProducer frameProducer;
-
 	private BufferedImage buffer;
 
 	private File inputAudioFile = null;
 
+	Button importButton;
+
+	Button exportButton;
+
 	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
 		super( product, asset );
 
-		renderPane = new Pane();
+		renderPane = new RenderPane();
 		Label name = new Label( "HyperSynesthesia" );
 		name.setStyle( "-fx-font-size: 5cm" + "; -fx-font-weight: bold" + "; -fx-text-fill: #000000;" );
 		renderPane.getChildren().add( name );
@@ -71,11 +73,12 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		HBox fileButtons = new HBox();
 
-		Button importButton = new Button( "Import" );
+		importButton = new Button( "Import" );
 		importButton.setOnAction( ( event ) -> loadMusicFile() );
 
-		Button exportButton = new Button( "Export" );
+		exportButton = new Button( "Export" );
 		exportButton.setOnAction( ( event ) -> exportVideo() );
+		exportButton.setDisable( true );
 
 		fileButtons.getChildren().addAll( importButton, exportButton );
 		right.getChildren().addAll( new Label( "Inspector" ), fileButtons );
@@ -128,8 +131,19 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		} );
 
 		this.getChildren().add( splitPane );
+	}
 
-		frameProducer = new FrameProducer() {
+	public static double clamp( double value, double min, double max ) {
+
+		if( Double.compare( value, min ) < 0 ) return min;
+
+		if( Double.compare( value, max ) > 0 ) return max;
+
+		return value;
+	}
+
+	private FrameProducer getNewFrameProducer() {
+		return new FrameProducer() {
 
 			private long frameCounter = 0;
 
@@ -152,15 +166,6 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		};
 	}
 
-	public static double clamp( double value, double min, double max ) {
-
-		if( Double.compare( value, min ) < 0 ) return min;
-
-		if( Double.compare( value, max ) > 0 ) return max;
-
-		return value;
-	}
-
 	private void renderBufferedImaged() {
 		renderPane.setScaleX( 1.0 );
 		renderPane.setScaleY( 1.0 );
@@ -176,6 +181,8 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		fileChooser.setTitle( "Open Music File" );
 
 		inputAudioFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() );
+
+		exportButton.setDisable( inputAudioFile == null );
 	}
 
 	private void exportVideo() {
@@ -190,9 +197,14 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		if( inputAudioFile != null ) {
 			inputAudioFile = new File( inputAudioFile.getPath() );
-			FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).executeAsync();
+			FFmpeg
+				.atPath()
+				.addInput( FrameInput.withProducer( getNewFrameProducer() ) )
+				.addInput( UrlInput.fromPath( inputAudioFile.toPath() ) )
+				.addOutput( UrlOutput.toPath( file.toPath() ) )
+				.executeAsync();
 		} else {
-			FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).executeAsync();
+			FFmpeg.atPath().addInput( FrameInput.withProducer( getNewFrameProducer() ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).executeAsync();
 		}
 
 	}
