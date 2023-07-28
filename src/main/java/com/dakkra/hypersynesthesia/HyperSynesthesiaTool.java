@@ -3,6 +3,7 @@ package com.dakkra.hypersynesthesia;
 import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.asset.Asset;
 import com.avereon.xenon.tool.guide.GuidedTool;
+import com.github.kokorin.jaffree.ffmpeg.*;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Button;
@@ -19,6 +20,8 @@ import lombok.CustomLog;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
 @CustomLog
 public class HyperSynesthesiaTool extends GuidedTool {
@@ -33,6 +36,14 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 	private double lastY;
 
+	private int dimX = 1920;
+
+	private int dimY = 1080;
+
+	private FrameProducer frameProducer;
+
+	private BufferedImage buffer;
+
 	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
 		super( product, asset );
 
@@ -42,8 +53,8 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		renderPane.getChildren().add( name );
 
 		renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius 40% , #ffebcd, #008080);" );
-		renderPane.setMaxSize( 1920, 1080 );
-		renderPane.setMinSize( 1920, 1080 );
+		renderPane.setMaxSize( dimX, dimY );
+		renderPane.setMinSize( dimX, dimY );
 
 		double DEFAULT_SCALE = 0.5;
 		renderPane.setScaleX( DEFAULT_SCALE );
@@ -115,6 +126,28 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		} );
 
 		this.getChildren().add( splitPane );
+
+		frameProducer = new FrameProducer() {
+
+			private long frameCounter = 0;
+
+			@Override
+			public List<Stream> produceStreams() {
+				return Collections.singletonList( new Stream().setType( Stream.Type.VIDEO ).setTimebase( 1000L ).setWidth( dimX ).setHeight( dimY ) );
+			}
+
+			@Override
+			public Frame produce() {
+				if( frameCounter > 30 ) {
+					return null; // return null when End of Stream is reached
+				}
+				long pts = frameCounter * 1000 / 10; // Frame PTS in Stream Timebase
+				Frame videoFrame = Frame.createVideoFrame( 0, pts, buffer );
+				frameCounter++;
+
+				return videoFrame;
+			}
+		};
 	}
 
 	public static double clamp( double value, double min, double max ) {
@@ -128,7 +161,10 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 	private BufferedImage renderBufferedImaged() {
 		WritableImage image = renderPane.snapshot( new SnapshotParameters(), null );
-		return SwingFXUtils.fromFXImage( image, null );
+		buffer = new BufferedImage( dimX, dimY, BufferedImage.TYPE_3BYTE_BGR );
+		SwingFXUtils.fromFXImage( image, buffer );
+		return buffer;
+
 	}
 
 	private void loadMusicFile() {
@@ -142,8 +178,11 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle( "Export Video" );
 
+		buffer = renderBufferedImaged();
+
 		File file = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
+		FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addOutput( UrlOutput.toUrl( file.toURI().toString() ) ).execute();
 	}
 
 }
