@@ -3,9 +3,12 @@ package com.dakkra.hypersynesthesia;
 import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.asset.Asset;
 import com.avereon.xenon.tool.guide.GuidedTool;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
@@ -14,6 +17,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import lombok.CustomLog;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 
 @CustomLog
@@ -23,7 +27,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 	private final double MAX_SCALE = 5.0;
 
-	private final Pane pane;
+	private final Pane renderPane;
 
 	private double lastX;
 
@@ -32,20 +36,20 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
 		super( product, asset );
 
-		pane = new Pane();
+		renderPane = new Pane();
 		Label name = new Label( "HyperSynesthesia" );
 		name.setStyle( "-fx-font-size: 5cm" + "; -fx-font-weight: bold" + "; -fx-text-fill: #000000;" );
-		pane.getChildren().add( name );
+		renderPane.getChildren().add( name );
 
-		pane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius 40% , #ffebcd, #008080);" );
-		pane.setMaxSize( 1920, 1080 );
-		pane.setMinSize( 1920, 1080 );
+		renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius 40% , #ffebcd, #008080);" );
+		renderPane.setMaxSize( 1920, 1080 );
+		renderPane.setMinSize( 1920, 1080 );
 
 		double DEFAULT_SCALE = 0.5;
-		pane.setScaleX( DEFAULT_SCALE );
-		pane.setScaleY( DEFAULT_SCALE );
+		renderPane.setScaleX( DEFAULT_SCALE );
+		renderPane.setScaleY( DEFAULT_SCALE );
 
-		Pane container = new Pane( pane );
+		Pane container = new Pane( renderPane );
 		container.setStyle( "-fx-background-color: #000000;" );
 
 		SplitPane splitPane = new SplitPane();
@@ -69,7 +73,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		container.setOnScroll( ( ScrollEvent event ) -> {
 			if( Math.abs( event.getDeltaY() ) <= 0.0 ) return;
 
-			double scale = pane.getScaleX();
+			double scale = renderPane.getScaleX();
 			double oldscale = scale;
 
 			if( event.getDeltaY() > 0 ) {
@@ -81,14 +85,14 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 			double f = (scale / oldscale) - 1;
 
-			double deltaX = (event.getX() - (pane.getBoundsInParent().getWidth() / 2 + pane.getBoundsInParent().getMinX()));
-			double deltaY = (event.getY() - (pane.getBoundsInParent().getHeight() / 2 + pane.getBoundsInParent().getMinY()));
+			double deltaX = (event.getX() - (renderPane.getBoundsInParent().getWidth() / 2 + renderPane.getBoundsInParent().getMinX()));
+			double deltaY = (event.getY() - (renderPane.getBoundsInParent().getHeight() / 2 + renderPane.getBoundsInParent().getMinY()));
 
-			pane.setScaleX( scale );
-			pane.setScaleY( scale );
+			renderPane.setScaleX( scale );
+			renderPane.setScaleY( scale );
 
-			pane.setTranslateX( pane.getTranslateX() - f * deltaX );
-			pane.setTranslateY( pane.getTranslateY() - f * deltaY );
+			renderPane.setTranslateX( renderPane.getTranslateX() - f * deltaX );
+			renderPane.setTranslateY( renderPane.getTranslateY() - f * deltaY );
 		} );
 
 		container.setOnMouseDragEntered( ( MouseEvent event ) -> {
@@ -99,8 +103,8 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		container.setOnMouseDragged( ( MouseEvent event ) -> {
 			double deltaX = event.getX() - lastX;
 			double deltaY = event.getY() - lastY;
-			pane.setTranslateX( pane.getTranslateX() + deltaX );
-			pane.setTranslateY( pane.getTranslateY() + deltaY );
+			renderPane.setTranslateX( renderPane.getTranslateX() + deltaX );
+			renderPane.setTranslateY( renderPane.getTranslateY() + deltaY );
 			lastX = event.getX();
 			lastY = event.getY();
 		} );
@@ -122,6 +126,11 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		return value;
 	}
 
+	private BufferedImage renderBufferedImaged() {
+		WritableImage image = renderPane.snapshot( new SnapshotParameters(), null );
+		return SwingFXUtils.fromFXImage( image, null );
+	}
+
 	private void loadMusicFile() {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle( "Open Music File" );
@@ -134,6 +143,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		fileChooser.setTitle( "Export Video" );
 
 		File file = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
+
 	}
 
 }
