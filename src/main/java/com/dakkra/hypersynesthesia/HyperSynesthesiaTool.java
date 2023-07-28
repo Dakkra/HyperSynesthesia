@@ -186,10 +186,13 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		File file = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
+		if( file == null ) return;
+
 		if( inputAudioFile != null ) {
-			FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).execute();
+			inputAudioFile = new File( inputAudioFile.getPath() );
+			FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).executeAsync();
 		} else {
-			FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).execute();
+			FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).executeAsync();
 		}
 
 	}
