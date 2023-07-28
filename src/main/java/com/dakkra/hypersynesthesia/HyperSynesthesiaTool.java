@@ -4,6 +4,7 @@ import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.asset.Asset;
 import com.avereon.xenon.tool.guide.GuidedTool;
 import com.github.kokorin.jaffree.ffmpeg.*;
+import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Button;
@@ -149,15 +150,20 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 			@Override
 			public List<Stream> produceStreams() {
-				return Collections.singletonList( new Stream().setType( Stream.Type.VIDEO ).setTimebase( 1000L ).setWidth( dimX ).setHeight( dimY ) );
+				return Collections.singletonList( new Stream().setType( Stream.Type.VIDEO ).setTimebase( 60L ).setWidth( dimX ).setHeight( dimY ) );
 			}
 
 			@Override
 			public Frame produce() {
-				if( frameCounter > 30 ) {
-					return null; // return null when End of Stream is reached
+				if( frameCounter > 60 * 10 ) {
+					return null;
 				}
-				long pts = frameCounter * 1000 / 10; // Frame PTS in Stream Timebase
+				long pts = frameCounter; // Frame PTS in Stream Timebase
+				double val = Math.abs( Math.sin( frameCounter / 10.0 ) );
+				Platform.runLater( () -> {
+					renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + val * 100 + "% , #ffebcd, #008080);" );
+					renderBufferedImaged( frameCounter );
+				} );
 				Frame videoFrame = Frame.createVideoFrame( 0, pts, buffer );
 				frameCounter++;
 
@@ -166,7 +172,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		};
 	}
 
-	private void renderBufferedImaged() {
+	private void renderBufferedImaged( long frameIndex ) {
 		renderPane.setScaleX( 1.0 );
 		renderPane.setScaleY( 1.0 );
 		WritableImage image = renderPane.snapshot( new SnapshotParameters(), null );
@@ -188,8 +194,6 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	private void exportVideo() {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle( "Export Video" );
-
-		renderBufferedImaged();
 
 		File file = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
