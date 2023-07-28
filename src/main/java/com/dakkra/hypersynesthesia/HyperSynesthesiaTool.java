@@ -4,10 +4,11 @@ import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.asset.Asset;
 import com.avereon.xenon.tool.guide.GuidedTool;
 import javafx.scene.control.Label;
+import javafx.scene.control.SplitPane;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import lombok.CustomLog;
 
 @CustomLog
@@ -40,10 +41,15 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		pane.setScaleY( DEFAULT_SCALE );
 
 		Pane container = new Pane( pane );
+		container.setStyle( "-fx-background-color: #000000;" );
 
-		BorderPane borderPane = new BorderPane( container, new Label( "Top" ), new Label( "Right" ), new Label( "Bottom" ), new Label( "Left" ) );
+		SplitPane splitPane = new SplitPane();
+		
+		VBox right = new VBox();
+		right.getChildren().add( new Label( "Inspector" ) );
 
-		borderPane.setStyle( "-fx-background-color: blue;" );
+		splitPane.getItems().addAll( container, right );
+		splitPane.setDividerPositions( 0.8 );
 
 		container.setOnScroll( ( ScrollEvent event ) -> {
 			if( Math.abs( event.getDeltaY() ) <= 0.0 ) return;
@@ -89,7 +95,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 			lastY = event.getY();
 		} );
 
-		this.getChildren().add( borderPane );
+		this.getChildren().add( splitPane );
 	}
 
 	public static double clamp( double value, double min, double max ) {
