@@ -44,6 +44,8 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 	private BufferedImage buffer;
 
+	private File inputAudioFile = null;
+
 	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
 		super( product, asset );
 
@@ -173,7 +175,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle( "Open Music File" );
 
-		File file = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() );
+		inputAudioFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() );
 	}
 
 	private void exportVideo() {
@@ -184,7 +186,12 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		File file = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
-		FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).execute();
+		if( inputAudioFile != null ) {
+			FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).execute();
+		} else {
+			FFmpeg.atPath().addInput( FrameInput.withProducer( frameProducer ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).execute();
+		}
+
 	}
 
 }
