@@ -3,13 +3,18 @@ package com.dakkra.hypersynesthesia;
 import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.asset.Asset;
 import com.avereon.xenon.tool.guide.GuidedTool;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import lombok.CustomLog;
+
+import java.io.File;
 
 @CustomLog
 public class HyperSynesthesiaTool extends GuidedTool {
@@ -44,9 +49,19 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		container.setStyle( "-fx-background-color: #000000;" );
 
 		SplitPane splitPane = new SplitPane();
-		
+
 		VBox right = new VBox();
-		right.getChildren().add( new Label( "Inspector" ) );
+
+		HBox fileButtons = new HBox();
+
+		Button importButton = new Button( "Import" );
+		importButton.setOnAction( ( event ) -> loadMusicFile() );
+
+		Button exportButton = new Button( "Export" );
+		exportButton.setOnAction( ( event ) -> exportVideo() );
+
+		fileButtons.getChildren().addAll( importButton, exportButton );
+		right.getChildren().addAll( new Label( "Inspector" ), fileButtons );
 
 		splitPane.getItems().addAll( container, right );
 		splitPane.setDividerPositions( 0.8 );
@@ -105,6 +120,20 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		if( Double.compare( value, max ) > 0 ) return max;
 
 		return value;
+	}
+
+	private void loadMusicFile() {
+		FileChooser fileChooser = new FileChooser();
+		fileChooser.setTitle( "Open Music File" );
+
+		File file = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() );
+	}
+
+	private void exportVideo() {
+		FileChooser fileChooser = new FileChooser();
+		fileChooser.setTitle( "Export Video" );
+
+		File file = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
 	}
 
 }
