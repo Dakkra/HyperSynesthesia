@@ -23,6 +23,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 @CustomLog
 public class HyperSynesthesiaTool extends GuidedTool {
@@ -48,6 +49,8 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	Button importButton;
 
 	Button exportButton;
+
+	Long musicDuration = null;
 
 	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
 		super( product, asset );
@@ -155,13 +158,15 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 			@Override
 			public Frame produce() {
-				if( frameCounter > 60 * 10 ) {
+				final long millisPerFrame = 1000 / 60;
+
+				if( frameCounter > musicDuration / millisPerFrame ) {
 					return null;
 				}
 				long pts = frameCounter; // Frame PTS in Stream Timebase
 				double val = Math.abs( Math.sin( frameCounter / 10.0 ) );
 				Platform.runLater( () -> {
-					renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + val * 100 + "% , #ffebcd, #008080);" );
+					renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + val * 50 + "% , #ffebcd, -fx-accent);" );
 					renderBufferedImaged( frameCounter );
 				} );
 				Frame videoFrame = Frame.createVideoFrame( 0, pts, buffer );
@@ -189,6 +194,18 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		inputAudioFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
 		exportButton.setDisable( inputAudioFile == null );
+
+		AtomicLong duration = new AtomicLong( 0 );
+
+		FFmpeg.atPath().addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( new NullOutput() ).setProgressListener( new ProgressListener() {
+
+			@Override
+			public void onProgress( FFmpegProgress progress ) {
+				duration.set( progress.getTimeMillis() );
+			}
+		} ).execute();
+
+		musicDuration = duration.get();
 	}
 
 	private void exportVideo() {
