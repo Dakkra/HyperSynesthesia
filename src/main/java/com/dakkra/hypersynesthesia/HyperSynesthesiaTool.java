@@ -2,6 +2,7 @@ package com.dakkra.hypersynesthesia;
 
 import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.asset.Asset;
+import com.avereon.xenon.task.Task;
 import com.avereon.xenon.tool.guide.GuidedTool;
 import com.github.kokorin.jaffree.ffmpeg.*;
 import javafx.application.Platform;
@@ -23,6 +24,9 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @CustomLog
@@ -34,6 +38,8 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 	private final RenderPane renderPane;
 
+	private static final BufferedImage POISON_PILL = new BufferedImage( 1, 1, BufferedImage.TYPE_INT_RGB );
+
 	private double lastX;
 
 	private double lastY;
@@ -41,8 +47,6 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	private int dimX = 1920;
 
 	private int dimY = 1080;
-
-	private BufferedImage buffer;
 
 	private File inputAudioFile = null;
 
@@ -146,7 +150,10 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		return value;
 	}
 
-	private FrameProducer getNewFrameProducer() {
+	// NOTE The buffer size could be computed to be more efficient
+	private final BlockingQueue<BufferedImage> frameBuffer = new LinkedBlockingQueue<>( 1000 );
+
+	private FrameProducer fxFrameProducer() {
 		return new FrameProducer() {
 
 			private long frameCounter = 0;
@@ -159,27 +166,125 @@ public class HyperSynesthesiaTool extends GuidedTool {
 			@Override
 			public Frame produce() {
 				long pts = frameCounter; // Frame PTS in Stream Timebase
-				double val = Math.abs( Math.sin( frameCounter / 10.0 ) );
-				Platform.runLater( () -> {
-					renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + val * 50 + "% , #ffebcd, -fx-accent);" );
-					renderBufferedImaged( frameCounter );
-				} );
-				Frame videoFrame = Frame.createVideoFrame( 0, pts, buffer );
-				frameCounter++;
+				try {
+					synchronized( frameBufferMutex ) {
+						BufferedImage image = frameBuffer.take();
+						if( image == POISON_PILL ) return null;
 
-				return videoFrame;
+						Frame videoFrame = Frame.createVideoFrame( 0, pts, image );
+						frameCounter++;
+
+						// Notify that there is room on the queue
+						frameBufferMutex.notifyAll();
+
+						return videoFrame;
+					}
+				} catch( InterruptedException exception ) {
+					return null;
+				}
 			}
 		};
 	}
 
-	private void renderBufferedImaged( long frameIndex ) {
+	private final Object frameBufferMutex = new Object();
+
+	private class FrameRenderer extends Task<Void> {
+
+		private long frameCounter = 0;
+
+		public Void call() {
+			final long millisPerFrame = 1000 / 60;
+
+			try {
+				while( frameCounter < musicDuration / millisPerFrame ) {
+					// Wait for buffer capacity
+					synchronized( frameBufferMutex ) {
+						while( frameBuffer.remainingCapacity() < 1 ) {
+							try {
+								frameBufferMutex.wait( 100 );
+							} catch( InterruptedException e ) {
+								break;
+							}
+						}
+					}
+
+					// Render a frame and put it in the frame buffer
+					final long finalFrameCounter = frameCounter;
+					Platform.runLater( () -> {
+						try {
+							frameBuffer.offer( renderBufferedImaged( finalFrameCounter ), 10, TimeUnit.SECONDS );
+						} catch( InterruptedException exception ) {
+							// Stop rendering when interrupted
+						}
+					} );
+
+					frameCounter++;
+				}
+			} finally {
+				Platform.runLater( () -> {
+					try {
+						frameBuffer.offer( POISON_PILL, 10, TimeUnit.SECONDS );
+					} catch( InterruptedException e ) {
+						// Intentionally ignore exception
+					}
+				} );
+			}
+
+			return null;
+		}
+
+	}
+
+	//	private FrameProducer getNewFrameProducer() {
+	//		return new FrameProducer() {
+	//
+	//			private long frameCounter = 0;
+	//
+	//			@Override
+	//			public List<Stream> produceStreams() {
+	//				return Collections.singletonList( new Stream().setType( Stream.Type.VIDEO ).setTimebase( 60L ).setWidth( dimX ).setHeight( dimY ) );
+	//			}
+	//
+	//			@Override
+	//			public Frame produce() {
+	//				final long millisPerFrame = 1000 / 60;
+	//
+	//				if( frameCounter > musicDuration / millisPerFrame ) {
+	//					return null;
+	//				}
+	//				long pts = frameCounter; // Frame PTS in Stream Timebase
+	//				double val = Math.abs( Math.sin( frameCounter / 10.0 ) );
+	//				Platform.runLater( () -> {
+	//					renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + val * 50 + "% , #ffebcd, -fx-accent);" );
+	//					renderBufferedImaged( frameCounter );
+	//				} );
+	//				Frame videoFrame = Frame.createVideoFrame( 0, pts, buffer );
+	//				frameCounter++;
+	//
+	//				return videoFrame;
+	//			}
+	//		};
+	//	}
+
+	private BufferedImage renderBufferedImaged( long frameCounter ) {
+		log.atConfig().log( "Rendering frame " + frameCounter );
+		double val = Math.abs( Math.sin( frameCounter / 10.0 ) );
+
+		//RenderPane renderPane = new RenderPane();
+		//		renderPane.resize( dimX, dimY );
+		renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + val * 50 + "% , #ffebcd, -fx-accent);" );
 		renderPane.setScaleX( 1.0 );
 		renderPane.setScaleY( 1.0 );
+		//renderPane.applyCss();
+		//renderPane.layout();
+
 		WritableImage image = renderPane.snapshot( new SnapshotParameters(), null );
-		buffer = new BufferedImage( dimX, dimY, BufferedImage.TYPE_3BYTE_BGR );
+		BufferedImage buffer = new BufferedImage( dimX, dimY, BufferedImage.TYPE_3BYTE_BGR );
 		BufferedImage base = SwingFXUtils.fromFXImage( image, null );
 		buffer.getGraphics().drawImage( base, 0, 0, null );
 		buffer.getGraphics().dispose();
+
+		return buffer;
 	}
 
 	private void loadMusicFile() {
@@ -211,18 +316,14 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		if( file == null ) return;
 
+		getProgram().getTaskManager().submit( new FrameRenderer() );
+
 		if( inputAudioFile != null ) {
 			inputAudioFile = new File( inputAudioFile.getPath() );
-			FFmpeg
-				.atPath()
-				.addInput( FrameInput.withProducer( getNewFrameProducer() ) )
-				.addInput( UrlInput.fromPath( inputAudioFile.toPath() ) )
-				.addOutput( UrlOutput.toPath( file.toPath() ) )
-				.executeAsync();
+			FFmpeg.atPath().addInput( FrameInput.withProducer( fxFrameProducer() ) ).addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).executeAsync();
 		} else {
-			FFmpeg.atPath().addInput( FrameInput.withProducer( getNewFrameProducer() ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).executeAsync();
+			FFmpeg.atPath().addInput( FrameInput.withProducer( fxFrameProducer() ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).executeAsync();
 		}
-
 	}
 
 }
