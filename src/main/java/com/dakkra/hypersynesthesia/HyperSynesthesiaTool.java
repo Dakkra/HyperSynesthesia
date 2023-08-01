@@ -82,7 +82,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		exportButton = new Button( "Export" );
 		exportButton.setOnAction( ( event ) -> exportVideo() );
-		exportButton.setDisable( true );
+		//		exportButton.setDisable( true );
 
 		fileButtons.getChildren().addAll( importButton, exportButton );
 		right.getChildren().addAll( new Label( "Inspector" ), fileButtons );
@@ -158,11 +158,6 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 			@Override
 			public Frame produce() {
-				final long millisPerFrame = 1000 / 60;
-
-				if( frameCounter > musicDuration / millisPerFrame ) {
-					return null;
-				}
 				long pts = frameCounter; // Frame PTS in Stream Timebase
 				double val = Math.abs( Math.sin( frameCounter / 10.0 ) );
 				Platform.runLater( () -> {
@@ -193,7 +188,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		inputAudioFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
-		exportButton.setDisable( inputAudioFile == null );
+		//		exportButton.setDisable( inputAudioFile == null );
 
 		AtomicLong duration = new AtomicLong( 0 );
 
