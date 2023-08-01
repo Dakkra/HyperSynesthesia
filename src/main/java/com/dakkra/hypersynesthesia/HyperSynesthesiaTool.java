@@ -22,6 +22,8 @@ import lombok.CustomLog;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -315,6 +317,13 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		File file = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
 		if( file == null ) return;
+
+		try {
+			if( Files.exists( file.toPath() ) ) Files.delete( file.toPath() );
+		} catch( IOException exception ) {
+			log.atWarn().log("Unable to overwrite file " + file, exception );
+			return;
+		}
 
 		getProgram().getTaskManager().submit( new FrameRenderer() );
 
