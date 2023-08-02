@@ -12,6 +12,8 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
+import javafx.scene.image.PixelBuffer;
+import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
@@ -23,8 +25,11 @@ import javafx.stage.FileChooser;
 import lombok.CustomLog;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
+import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
@@ -70,7 +75,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
 		super( product, asset );
 
-		frameBuffer = new LinkedBlockingQueue<>( 1000 );
+		frameBuffer = new LinkedBlockingQueue<>( 100 );
 
 		// Set up the rendering components
 		renderPane = new RenderPane();
@@ -214,6 +219,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		public Void call() {
 			final long millisPerFrame = 1000 / 60;
 
+			long startTime = System.currentTimeMillis();
 			try {
 				while( frameCounter < musicDuration / millisPerFrame ) {
 					// Wait for buffer capacity
@@ -230,10 +236,14 @@ public class HyperSynesthesiaTool extends GuidedTool {
 					// Render a frame and put it in the frame buffer
 					final long finalFrameCounter = frameCounter;
 					Platform.runLater( () -> {
+						long frameStart = System.nanoTime();
 						try {
 							frameBuffer.offer( renderBufferedImaged( finalFrameCounter ), 10, TimeUnit.SECONDS );
 						} catch( InterruptedException exception ) {
 							// Stop rendering when interrupted
+						} finally {
+							long frameEnd = System.nanoTime();
+							log.atConfig().log( "Frame " + finalFrameCounter + " rendered in " + (frameEnd - frameStart) + "ns" );
 						}
 					} );
 
@@ -248,6 +258,8 @@ public class HyperSynesthesiaTool extends GuidedTool {
 					}
 				} );
 			}
+
+			System.out.println( "Rendering time = " + (System.currentTimeMillis() - startTime) + "ms" );
 
 			return null;
 		}
@@ -285,30 +297,69 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	//		};
 	//	}
 
+	private final WritableImage wiBuffer = createFxWritableImageBuffer( dimX, dimY );
+
 	private BufferedImage renderBufferedImaged( long frameCounter ) {
-		log.atConfig().log( "Rendering frame " + frameCounter );
+		//log.atConfig().log( "Render frame " + frameCounter );
 		double val = Math.abs( Math.sin( frameCounter / 10.0 ) );
 
-		//RenderPane renderPane = new RenderPane();
-		//		renderPane.resize( dimX, dimY );
+		// -fx-background-color: radial-gradient(center 50% 50% , radius 40% , #ffebcd, #008080);
 		renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + val * 50 + "% , #ffebcd, -fx-accent);" );
 		renderPane.setScaleX( 1.0 );
 		renderPane.setScaleY( 1.0 );
-		//renderPane.applyCss();
-		//renderPane.layout();
 
-		WritableImage image = renderPane.snapshot( new SnapshotParameters(), null );
+		renderPane.snapshot( new SnapshotParameters(), wiBuffer );
+		BufferedImage base = SwingFXUtils.fromFXImage( wiBuffer, null );
+
 		BufferedImage buffer = new BufferedImage( dimX, dimY, BufferedImage.TYPE_3BYTE_BGR );
-		BufferedImage base = SwingFXUtils.fromFXImage( image, null );
-		buffer.getGraphics().drawImage( base, 0, 0, null );
+		convert( base, buffer );
 		buffer.getGraphics().dispose();
+		base.getGraphics().dispose();
 
 		return buffer;
+	}
+
+	private WritableImage createFxWritableImageBuffer( int width, int height ) {
+		PixelFormat<IntBuffer> pixelFormat = PixelFormat.getIntArgbPreInstance();
+		IntBuffer renderPixelBuffer = IntBuffer.allocate( width * height );
+		return new WritableImage( new PixelBuffer<>( width, height, renderPixelBuffer, pixelFormat ) );
+	}
+
+	private void convert( BufferedImage sourceImage, BufferedImage targetImage ) {
+		int width = targetImage.getWidth();
+		int height = targetImage.getHeight();
+		int pixelCount = width * height;
+
+		// Get the source and target pixel buffers
+		int[] source = ((DataBufferInt)sourceImage.getRaster().getDataBuffer()).getData();
+		byte[] target = ((DataBufferByte)targetImage.getRaster().getDataBuffer()).getData();
+
+		// Convert from ArgbPre to Bgr
+		for( int index = 0; index < pixelCount; index++ ) {
+			int pixel = preToNonPre( source[ index ] );
+			target[ 3 * index + 2 ] = (byte)((pixel >> 16) & 0xff);
+			target[ 3 * index + 1 ] = (byte)((pixel >> 8) & 0xff);
+			target[ 3 * index ] = (byte)((pixel) & 0xff);
+		}
+	}
+
+	static int preToNonPre( int pre ) {
+		int a = pre >>> 24;
+		if( a == 0xff || a == 0x00 ) return pre;
+		int r = (pre >> 16) & 0xff;
+		int g = (pre >> 8) & 0xff;
+		int b = (pre) & 0xff;
+		int halfa = a >> 1;
+		r = (r >= a) ? 0xff : (r * 0xff + halfa) / a;
+		g = (g >= a) ? 0xff : (g * 0xff + halfa) / a;
+		b = (b >= a) ? 0xff : (b * 0xff + halfa) / a;
+		return (a << 24) | (r << 16) | (g << 8) | b;
 	}
 
 	private void loadMusicFile() {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle( "Open Music File" );
+		fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Music" ) );
 
 		inputAudioFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
@@ -330,6 +381,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	private void exportVideo() {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle( "Export Video" );
+		fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Videos" ) );
 
 		File file = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
@@ -338,7 +390,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		try {
 			if( Files.exists( file.toPath() ) ) Files.delete( file.toPath() );
 		} catch( IOException exception ) {
-			log.atWarn().log("Unable to overwrite file " + file, exception );
+			log.atWarn().log( "Unable to overwrite file " + file, exception );
 			return;
 		}
 
