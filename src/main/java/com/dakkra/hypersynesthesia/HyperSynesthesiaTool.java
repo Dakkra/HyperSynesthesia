@@ -236,10 +236,14 @@ public class HyperSynesthesiaTool extends GuidedTool {
 					// Render a frame and put it in the frame buffer
 					final long finalFrameCounter = frameCounter;
 					Platform.runLater( () -> {
+						long frameStart = System.nanoTime();
 						try {
 							frameBuffer.offer( renderBufferedImaged( finalFrameCounter ), 10, TimeUnit.SECONDS );
 						} catch( InterruptedException exception ) {
 							// Stop rendering when interrupted
+						} finally {
+							long frameEnd = System.nanoTime();
+							log.atConfig().log( "Frame " + finalFrameCounter + " rendered in " + (frameEnd - frameStart) + "ns" );
 						}
 					} );
 
