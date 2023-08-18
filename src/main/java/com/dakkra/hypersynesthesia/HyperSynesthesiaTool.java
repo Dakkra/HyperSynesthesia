@@ -4,6 +4,7 @@ import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.asset.Asset;
 import com.avereon.xenon.task.Task;
 import com.avereon.xenon.tool.guide.GuidedTool;
+import com.github.kokorin.jaffree.StreamType;
 import com.github.kokorin.jaffree.ffmpeg.*;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
@@ -376,6 +377,22 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		} ).execute();
 
 		musicDuration = duration.get();
+		FFmpeg.atPath().addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( FrameOutput.withConsumer( new FrameConsumer() {
+
+			@Override
+			public void consumeStreams( List<Stream> streams ) {
+				//ignore
+			}
+
+			@Override
+			public void consume( Frame frame ) {
+				//End of stream
+				if( frame == null ) return;
+				for( int sample : frame.getSamples() ) {
+					System.out.println( sample );
+				}
+			}
+		} ).disableStream( StreamType.VIDEO ).disableStream( StreamType.DATA ).disableStream( StreamType.SUBTITLE ) ).execute();
 	}
 
 	private void exportVideo() {
