@@ -34,6 +34,7 @@ import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -72,6 +73,10 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	Button exportButton;
 
 	Long musicDuration = null;
+
+	private final List<Integer> samples_left = new Vector<>();
+
+	private final List<Integer> samples_right = new Vector<>();
 
 	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
 		super( product, asset );
@@ -388,11 +393,17 @@ public class HyperSynesthesiaTool extends GuidedTool {
 			public void consume( Frame frame ) {
 				//End of stream
 				if( frame == null ) return;
-				for( int sample : frame.getSamples() ) {
-					System.out.println( sample );
+
+				//Add samples to the sample buffers
+				for( int index = 0; index < frame.getSamples().length; index++ ) {
+					if( index % 2 == 0 ) {
+						samples_left.add( frame.getSamples()[ index ] );
+					} else {
+						samples_right.add( frame.getSamples()[ index ] );
+					}
 				}
 			}
-		} ).disableStream( StreamType.VIDEO ).disableStream( StreamType.DATA ).disableStream( StreamType.SUBTITLE ) ).execute();
+		} ).disableStream( StreamType.VIDEO ).disableStream( StreamType.DATA ).disableStream( StreamType.SUBTITLE ) ).executeAsync();
 	}
 
 	private void exportVideo() {
