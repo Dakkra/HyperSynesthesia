@@ -4,12 +4,14 @@ import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.asset.Asset;
 import com.avereon.xenon.task.Task;
 import com.avereon.xenon.tool.guide.GuidedTool;
+import com.dakkra.hypersynesthesia.dsp.PeakLoudness;
 import com.github.kokorin.jaffree.StreamType;
 import com.github.kokorin.jaffree.ffmpeg.*;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
@@ -72,11 +74,13 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 	Button exportButton;
 
-	Long musicDuration = null;
+	Long musicDurationMS = null;
 
-	private final List<Integer> samples_left = new Vector<>();
+	private Vector<Integer> samples_left;
 
-	private final List<Integer> samples_right = new Vector<>();
+	private Vector<Integer> samples_right;
+
+	private long samplerate;
 
 	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
 		super( product, asset );
@@ -85,16 +89,20 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		// Set up the rendering components
 		renderPane = new RenderPane();
+		Label name = new Label( "HyperSynesthesia" );
+		name.setStyle( "-fx-font-size: 100px" + "; -fx-font-weight: bold" + "; -fx-text-fill: #000000; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 10, 10);" );
 		renderPane.setMinSize( dimX, dimY );
 		renderPane.setPrefSize( dimX, dimY );
 		renderPane.setMaxSize( dimX, dimY );
+		renderPane.setScaleX( 1.0 );
+		renderPane.setScaleY( 1.0 );
 		renderScene = new Scene( renderPane );
 		renderScene.setFill( Color.TRANSPARENT );
+		renderPane.getChildren().add( name );
 
 		// Set up the display components
 		displayPane = new RenderPane();
-		Label name = new Label( "HyperSynesthesia" );
-		name.setStyle( "-fx-font-size: 5cm" + "; -fx-font-weight: bold" + "; -fx-text-fill: #000000;" );
+		name.setStyle( "-fx-font-size: 5cm" + "; -fx-font-weight: bold" + "; -fx-text-fill: #000000; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 10, 10);" );
 		displayPane.getChildren().add( name );
 
 		displayPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius 40% , #ffebcd, #008080);" );
@@ -119,7 +127,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		exportButton = new Button( "Export" );
 		exportButton.setOnAction( ( event ) -> exportVideo() );
-		//		exportButton.setDisable( true );
+		exportButton.setDisable( true );
 
 		fileButtons.getChildren().addAll( importButton, exportButton );
 		right.getChildren().addAll( new Label( "Inspector" ), fileButtons );
@@ -224,10 +232,11 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		public Void call() {
 			final long millisPerFrame = 1000 / 60;
+			final long totalFrames = musicDurationMS / millisPerFrame;
 
 			long startTime = System.currentTimeMillis();
 			try {
-				while( frameCounter < musicDuration / millisPerFrame ) {
+				while( frameCounter < totalFrames ) {
 					// Wait for buffer capacity
 					synchronized( frameBufferMutex ) {
 						while( frameBuffer.remainingCapacity() < 1 ) {
@@ -249,7 +258,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 							// Stop rendering when interrupted
 						} finally {
 							long frameEnd = System.nanoTime();
-							log.atConfig().log( "Frame " + finalFrameCounter + " rendered in " + (frameEnd - frameStart) + "ns" );
+							log.atConfig().log( "Frame " + finalFrameCounter + " / " + totalFrames + " rendered in " + (frameEnd - frameStart) + "ns" );
 						}
 					} );
 
@@ -272,47 +281,33 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 	}
 
-	//	private FrameProducer getNewFrameProducer() {
-	//		return new FrameProducer() {
-	//
-	//			private long frameCounter = 0;
-	//
-	//			@Override
-	//			public List<Stream> produceStreams() {
-	//				return Collections.singletonList( new Stream().setType( Stream.Type.VIDEO ).setTimebase( 60L ).setWidth( dimX ).setHeight( dimY ) );
-	//			}
-	//
-	//			@Override
-	//			public Frame produce() {
-	//				final long millisPerFrame = 1000 / 60;
-	//
-	//				if( frameCounter > musicDuration / millisPerFrame ) {
-	//					return null;
-	//				}
-	//				long pts = frameCounter; // Frame PTS in Stream Timebase
-	//				double val = Math.abs( Math.sin( frameCounter / 10.0 ) );
-	//				Platform.runLater( () -> {
-	//					renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + val * 50 + "% , #ffebcd, -fx-accent);" );
-	//					renderBufferedImaged( frameCounter );
-	//				} );
-	//				Frame videoFrame = Frame.createVideoFrame( 0, pts, buffer );
-	//				frameCounter++;
-	//
-	//				return videoFrame;
-	//			}
-	//		};
-	//	}
-
 	private final WritableImage wiBuffer = createFxWritableImageBuffer( dimX, dimY );
 
 	private BufferedImage renderBufferedImaged( long frameCounter ) {
-		//log.atConfig().log( "Render frame " + frameCounter );
-		double val = Math.abs( Math.sin( frameCounter / 10.0 ) );
+		final long sampleIndex = frameCounter * (samplerate / 60);
+		final long samplesPerFrame = samplerate / 60;
+		final long samplesThisFrame = Math.min( samplesPerFrame, samples_left.size() - sampleIndex );
+		double peak = 0.0;
 
-		// -fx-background-color: radial-gradient(center 50% 50% , radius 40% , #ffebcd, #008080);
-		renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + val * 50 + "% , #ffebcd, -fx-accent);" );
+		if( samplesThisFrame > 0 ) {
+
+			// Get average samples between left and right channels for this frame
+			final int[] samples = new int[ (int)samplesThisFrame ];
+			for( int index = 0; index < samplesThisFrame; index++ ) {
+				samples[ index ] = (samples_left.get( (int)(sampleIndex + index) ) + samples_right.get( (int)(sampleIndex + index) )) / 2;
+			}
+
+			// Get peak value for this frame
+			PeakLoudness peakLoudness = new PeakLoudness();
+			peakLoudness.process( samples );
+			peak = peakLoudness.getPeakLoudness();
+		}
+		System.out.println( "Peak for frame: " + frameCounter + " = " + peak );
+
+		renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + peak * 50 + "% , #ffebcd, -fx-accent);" );
 		renderPane.setScaleX( 1.0 );
 		renderPane.setScaleY( 1.0 );
+		renderPane.getChildren().add( new Label( "HyperSynesthesia" ) );
 
 		renderPane.snapshot( new SnapshotParameters(), wiBuffer );
 		BufferedImage base = SwingFXUtils.fromFXImage( wiBuffer, null );
@@ -369,24 +364,20 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		inputAudioFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() );
 
-		//		exportButton.setDisable( inputAudioFile == null );
+		exportButton.setDisable( inputAudioFile == null );
 
 		AtomicLong duration = new AtomicLong( 0 );
 
-		FFmpeg.atPath().addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( new NullOutput() ).setProgressListener( new ProgressListener() {
+		FFmpeg.atPath().addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( new NullOutput() ).setProgressListener( progress -> duration.set( progress.getTimeMillis() ) ).execute();
 
-			@Override
-			public void onProgress( FFmpegProgress progress ) {
-				duration.set( progress.getTimeMillis() );
-			}
-		} ).execute();
-
-		musicDuration = duration.get();
+		musicDurationMS = duration.get();
+		samples_left = new Vector<>();
+		samples_right = new Vector<>();
 		FFmpeg.atPath().addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( FrameOutput.withConsumer( new FrameConsumer() {
 
 			@Override
 			public void consumeStreams( List<Stream> streams ) {
-				//ignore
+				samplerate = streams.get( 0 ).getSampleRate();
 			}
 
 			@Override
@@ -403,10 +394,25 @@ public class HyperSynesthesiaTool extends GuidedTool {
 					}
 				}
 			}
-		} ).disableStream( StreamType.VIDEO ).disableStream( StreamType.DATA ).disableStream( StreamType.SUBTITLE ) ).executeAsync();
+		} ).disableStream( StreamType.VIDEO ).disableStream( StreamType.DATA ).disableStream( StreamType.SUBTITLE ) ).execute();
+
+		System.out.println( "Duration = " + musicDurationMS );
+		System.out.println( "Loaded n-left samples: " + samples_left.size() );
+		System.out.println( "Loaded n-right samples: " + samples_right.size() );
+		System.out.println( "At sample rate: " + samplerate );
+		System.out.println( "Samples per frame: " + (samplerate / 60) );
 	}
 
 	private void exportVideo() {
+		if( inputAudioFile == null ) {
+			Alert alert = new Alert( Alert.AlertType.ERROR );
+			alert.setTitle( "Missing input file" );
+			alert.setHeaderText( "No input file selected" );
+			alert.setContentText( "Please select an input file before exporting" );
+			alert.show();
+			return;
+		}
+
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle( "Export Video" );
 		fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Videos" ) );
@@ -426,9 +432,13 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		if( inputAudioFile != null ) {
 			inputAudioFile = new File( inputAudioFile.getPath() );
-			FFmpeg.atPath().addInput( FrameInput.withProducer( fxFrameProducer() ) ).addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).executeAsync();
-		} else {
-			FFmpeg.atPath().addInput( FrameInput.withProducer( fxFrameProducer() ) ).addOutput( UrlOutput.toPath( file.toPath() ) ).executeAsync();
+			FFmpeg
+				.atPath()
+				.addInput( FrameInput.withProducer( fxFrameProducer() ) )
+				.addInput( UrlInput.fromPath( inputAudioFile.toPath() ) )
+				.addOutput( UrlOutput.toPath( file.toPath() ) )
+				.addArguments( "-pix_fmt", "yuv420p" )
+				.executeAsync();
 		}
 	}
 
