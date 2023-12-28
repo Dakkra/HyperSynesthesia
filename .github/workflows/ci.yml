@@ -77,3 +77,5 @@ jobs:
         with:
           name: hypersynesthesia-plugin.jar
           path: target/hypersynesthesia-${{env.RELEASE_VERSION}}.jar
+
+# All need to upload the catalog and the product card
