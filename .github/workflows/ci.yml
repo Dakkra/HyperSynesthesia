@@ -58,7 +58,7 @@ jobs:
       - name: Unit Tests
         run: |
           mvn ${{env.MAVEN_PARMS}} test
-          
+
       - name: Package
         run: |
           mvn ${{env.MAVEN_PARMS}} package
@@ -77,3 +77,33 @@ jobs:
         with:
           name: hypersynesthesia-plugin.jar
           path: target/hypersynesthesia-${{env.RELEASE_VERSION}}.jar
+
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - run: mkdir build
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: hypersynesthesia-plugin.jar
+          path: build/
+
+      - name: Get SSH Key
+        run: |
+          mkdir ~/.ssh
+          printf %s "$DEPLOYMENT_KEY" > ~/.ssh/id_rsa
+          printf %s "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+        shell: bash
+        env:
+          DEPLOYMENT_KEY: ${{ secrets.SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+
+      - run: chmod 600 ~/.ssh/id_rsa
+
+#      - name: Deploy plugin
+#        run: scp -r build/* ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html
