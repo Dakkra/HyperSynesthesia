@@ -10,7 +10,7 @@ on:
 env:
   DISPLAY: ":99"
   JAVA_DISTRO: "temurin"
-  JAVA_VERSION: "17"
+  JAVA_VERSION: "21"
   MAVEN_PARMS: "-B -U -V"
   XVFB_PARMS: "-screen 0 1920x1080x24 -nolisten unix"
 
@@ -58,7 +58,7 @@ jobs:
       - name: Unit Tests
         run: |
           mvn ${{env.MAVEN_PARMS}} test
-          
+
       - name: Package
         run: |
           mvn ${{env.MAVEN_PARMS}} package
