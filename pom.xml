@@ -53,7 +53,7 @@
 		<dependency>
 			<groupId>com.github.kokorin.jaffree</groupId>
 			<artifactId>jaffree</artifactId>
-			<version>2022.06.03</version>
+			<version>2023.09.10</version>
 		</dependency>
 
 		<dependency>
