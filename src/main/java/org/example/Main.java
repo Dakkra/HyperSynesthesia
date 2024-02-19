@@ -1,12 +1,11 @@
 package org.example;
 
 import com.github.kokorin.jaffree.StreamType;
-import com.github.kokorin.jaffree.ffmpeg.*;
 import com.github.kokorin.jaffree.ffmpeg.Frame;
+import com.github.kokorin.jaffree.ffmpeg.*;
 import com.tambapps.fft4j.FastFouriers;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
@@ -16,15 +15,16 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.*;
 import java.util.List;
-import java.util.Timer;
+import java.util.Queue;
+import java.util.*;
 
 class ColorUtil {
 
 	public static Color colorWithIntensity( Color color, double intensity ) {
 		return new Color( (int)(color.getRed() * intensity), (int)(color.getGreen() * intensity), (int)(color.getBlue() * intensity), color.getAlpha() );
 	}
+
 }
 
 class DSP {
@@ -132,6 +132,7 @@ class DSP {
 	public void reset() {
 		peakLoudness = 0;
 	}
+
 }
 
 class SpinningSquare implements FrameProducer {
@@ -258,6 +259,7 @@ class SpinningSquare implements FrameProducer {
 
 		return videoFrame;
 	}
+
 }
 
 class MusicFile {
@@ -319,6 +321,7 @@ class MusicFile {
 	public Long getSampleRate() {
 		return sampleRate;
 	}
+
 }
 
 public class Main {
@@ -361,4 +364,5 @@ public class Main {
 		timer.cancel();
 		timer.purge();
 	}
+
 }
