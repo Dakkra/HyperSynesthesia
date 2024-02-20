@@ -2,6 +2,7 @@ package com.dakkra.hypersynesthesia;
 
 import com.avereon.skill.RunPauseResettable;
 import com.avereon.xenon.task.Task;
+import com.avereon.xenon.task.TaskException;
 import com.avereon.xenon.task.TaskManager;
 import com.dakkra.hypersynesthesia.task.FfftComputeTask;
 import lombok.CustomLog;
@@ -69,8 +70,7 @@ class ProjectProcessor implements RunPauseResettable {
 			if( stream != null ) stream.close();
 			return result;
 		} catch(IOException exception ) {
-			// FIXME Why not throw a TaskException?
-			throw new RuntimeException( exception );
+			throw new TaskException( exception );
 		}
 	}
 
