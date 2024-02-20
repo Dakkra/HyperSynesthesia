@@ -3,7 +3,8 @@
   "artifact": "${project.artifactId}",
   "version": "${project.version}",
   "timestamp": "${project.timestamp}",
-  "packaging": "mod",
+	"packaging": "mod",
+	"packagingVersion": "2",
   "icons": [ "${project.artifactId}", "<https://www.avereon.com/download/stable/avereon/provider/icon>" ],
   "name": "${project.name}",
   "provider": "${project.organization.name}",
@@ -24,5 +25,14 @@
     "roles": ["Architect", "Developer"]
   }
   ],
-  "contributors": []
+  "contributors": [
+		{
+			"name": "Mark Soderquist",
+			"email": "mark@avereon.com",
+			"timezone": "US/Mountain",
+			"organization": "Avereon",
+			"organizationUrl": "https://www.avereon.com",
+			"roles": [ "Developer" ]
+		}
+  ]
 }
