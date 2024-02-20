@@ -7,11 +7,7 @@ import lombok.CustomLog;
 @CustomLog
 public class HyperSynesthesia extends Mod {
 
-	private final ProjectAssetType projectAssetType;
-
-	public HyperSynesthesia() {
-		projectAssetType = new ProjectAssetType( this );
-	}
+	private ProjectAssetType projectAssetType;
 
 	@Override
 	public void register() {
@@ -24,26 +20,29 @@ public class HyperSynesthesia extends Mod {
 		super.startup();
 		log.atInfo().log( "Initializing HyperSynesthesia");
 
+		projectAssetType = new ProjectAssetType( this );
 		registerAssetType( projectAssetType );
 		//ToolRegistration registration = new ToolRegistration( this, HyperSynesthesiaTool.class);
-		ToolRegistration registration = new ToolRegistration( this, HyperSynesthesiaTool2.class);
-		registration.setName( "HyperSynestheisa Tool" );
-		registerTool( projectAssetType, registration );
+		//registration.setName( "HyperSynestheisa Tool" );
+		//registerTool( projectAssetType, registration );
+		ToolRegistration registrationV2 = new ToolRegistration( this, HyperSynesthesiaTool2.class);
+		registrationV2.setName( "HyperSynestheisa Tool v2" );
+		registerTool( projectAssetType, registrationV2 );
 	}
 
 	@Override
 	public void shutdown() throws Exception {
-		super.shutdown();
 		log.atInfo().log( "Closing HyperSynesthesia");
 
 		unregisterTool( projectAssetType, HyperSynesthesiaTool2.class );
 		//unregisterTool( projectAssetType, HyperSynesthesiaTool.class );
 		unregisterAssetType( projectAssetType );
+		super.shutdown();
 	}
 
 	@Override
 	public void unregister() {
-		super.unregister();
 		log.atInfo().log( "UnRegistering HyperSynesthesia");
+		super.unregister();
 	}
 }
