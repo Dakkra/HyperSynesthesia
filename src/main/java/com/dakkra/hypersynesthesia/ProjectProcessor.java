@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
@@ -27,6 +29,8 @@ class ProjectProcessor implements RunPauseResettable {
 
 	private MusicData music;
 
+	private int frameCount;
+
 	public ProjectProcessor( TaskManager taskManager, InputStream stream ) {
 		this.taskManager = taskManager;
 		this.stream = stream;
@@ -37,23 +41,27 @@ class ProjectProcessor implements RunPauseResettable {
 	public void run() {
 		taskManager.submit( Task.of( () -> {
 			try {
-				music = extractMusicData();
+				this.music = extractMusicData();
+				this.frameCount = (int)(music.getNumSamples() / (music.getSampleRate() / FRAMES_PER_SECOND));
 
 				try {
-					int fftCount = (int)(music.getNumSamples() / (music.getSampleRate() / FRAMES_PER_SECOND));
-					List<Future<DSP>> fftResults = new ArrayList<>( fftCount );
+					List<Future<DSP>> fftResults = new ArrayList<>( frameCount );
 
 					// Submit FFT compute tasks to the executor
-					for( int frameIdx = 0; frameIdx <= fftCount; frameIdx++ ) {
-						fftResults.add( taskManager.submit( new FftComputeTask( music, frameIdx ) ) );
+					for( int frameIndex = 0; frameIndex <= frameCount; frameIndex++ ) {
+						fftResults.add( taskManager.submit( new FftComputeTask( music, frameIndex ) ) );
 					}
+
+					Queue<PrioritySpectrum> spectrumQueue = new PriorityQueue<>();
+					Queue<PriorityLoudness> loudnessQueue = new PriorityQueue<>();
 
 					// TODO Collect the results
 					for( Future<DSP> future : fftResults ) {
 						DSP dsp = future.get();
+
 						// TODO Do something with the results
-						//fftQueue.offer( new PrioritySpectrum( new ArrayList<>( Arrays.asList( Arrays.stream( dsp.getSpectrum() ).boxed().toArray( Double[]::new ) ) ), index ) );
-						//loudnessQueue.offer( new PriorityLoudness( dsp.getRMSLoudness(), index ) );
+						spectrumQueue.offer( new PrioritySpectrum( dsp ) );
+						loudnessQueue.offer( new PriorityLoudness( dsp ) );
 					}
 				} catch( Exception exception ) {
 					log.atError( exception ).log( "Error loading music data" );
@@ -69,7 +77,7 @@ class ProjectProcessor implements RunPauseResettable {
 			MusicData result = new MusicData( stream ).load();
 			if( stream != null ) stream.close();
 			return result;
-		} catch(IOException exception ) {
+		} catch( IOException exception ) {
 			throw new TaskException( exception );
 		}
 	}

@@ -24,7 +24,7 @@ public class FftComputeTask extends Task<DSP> {
 	@Override
 	public DSP call() {
 		int[] samplesAvg = music.getSamplesAvg().subList( index * audioBufferSize, index * audioBufferSize + delta ).stream().mapToInt( i -> i ).toArray();
-		return new DSP().processFull( samplesAvg );
+		return new DSP().processFull( index, samplesAvg );
 	}
 
 }

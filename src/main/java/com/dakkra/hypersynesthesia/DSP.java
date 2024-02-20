@@ -1,11 +1,15 @@
 package com.dakkra.hypersynesthesia;
 
 import com.tambapps.fft4j.FastFouriers;
+import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class DSP {
+
+	@Getter
+	private int index;
 
 	private int peakLoudness = 0;
 
@@ -14,7 +18,9 @@ public class DSP {
 	private double[] spectrum = null;
 
 	// Skips the fft
-	public DSP processLight( int[] samples ) {
+	public DSP processLight(int index,  int[] samples ) {
+		this.index = index;
+
 		for( int sample : samples ) {
 			if( Math.abs( sample ) > peakLoudness ) {
 				peakLoudness = Math.abs( sample );
@@ -31,8 +37,8 @@ public class DSP {
 		return this;
 	}
 
-	public DSP processFull( int[] samples ) {
-		processLight( samples );
+	public DSP processFull( int index, int[] samples ) {
+		processLight( index, samples );
 
 		// Calculate FFT
 		double[] real = new double[ samples.length ];
