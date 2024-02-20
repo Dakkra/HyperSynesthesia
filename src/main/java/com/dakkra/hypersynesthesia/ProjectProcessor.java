@@ -4,7 +4,7 @@ import com.avereon.skill.RunPauseResettable;
 import com.avereon.xenon.task.Task;
 import com.avereon.xenon.task.TaskException;
 import com.avereon.xenon.task.TaskManager;
-import com.dakkra.hypersynesthesia.task.FfftComputeTask;
+import com.dakkra.hypersynesthesia.task.FftComputeTask;
 import lombok.CustomLog;
 
 import java.io.IOException;
@@ -40,16 +40,16 @@ class ProjectProcessor implements RunPauseResettable {
 				music = extractMusicData();
 
 				try {
-					int ffftCount = (int)(music.getNumSamples() / (music.getSampleRate() / FRAMES_PER_SECOND));
-					List<Future<DSP>> ffftResults = new ArrayList<>( ffftCount );
+					int fftCount = (int)(music.getNumSamples() / (music.getSampleRate() / FRAMES_PER_SECOND));
+					List<Future<DSP>> fftResults = new ArrayList<>( fftCount );
 
-					// Submit FFFT compute tasks to the executor
-					for( int frameIdx = 0; frameIdx <= ffftCount; frameIdx++ ) {
-						ffftResults.add( taskManager.submit( new FfftComputeTask( music, frameIdx ) ) );
+					// Submit FFT compute tasks to the executor
+					for( int frameIdx = 0; frameIdx <= fftCount; frameIdx++ ) {
+						fftResults.add( taskManager.submit( new FftComputeTask( music, frameIdx ) ) );
 					}
 
 					// TODO Collect the results
-					for( Future<DSP> future : ffftResults ) {
+					for( Future<DSP> future : fftResults ) {
 						DSP dsp = future.get();
 						// TODO Do something with the results
 						//fftQueue.offer( new PrioritySpectrum( new ArrayList<>( Arrays.asList( Arrays.stream( dsp.getSpectrum() ).boxed().toArray( Double[]::new ) ) ), index ) );

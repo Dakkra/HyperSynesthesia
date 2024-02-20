@@ -4,7 +4,7 @@ import com.avereon.xenon.task.Task;
 import com.dakkra.hypersynesthesia.DSP;
 import com.dakkra.hypersynesthesia.MusicData;
 
-public class FfftComputeTask extends Task<DSP> {
+public class FftComputeTask extends Task<DSP> {
 
 	private final MusicData music;
 
@@ -14,7 +14,7 @@ public class FfftComputeTask extends Task<DSP> {
 
 	private final int delta;
 
-	public FfftComputeTask( MusicData music, int index ) {
+	public FftComputeTask( MusicData music, int index ) {
 		this.music = music;
 		this.index = index;
 		this.audioBufferSize = (int)(music.getSampleRate() / 60);
