@@ -18,7 +18,7 @@ public class HyperSynesthesia extends Mod {
 	@Override
 	public void startup() throws Exception {
 		super.startup();
-		log.atInfo().log( "Initializing HyperSynesthesia");
+		log.atInfo().log( "Starting HyperSynesthesia");
 
 		projectAssetType = new ProjectAssetType( this );
 		registerAssetType( projectAssetType );
@@ -42,7 +42,7 @@ public class HyperSynesthesia extends Mod {
 
 	@Override
 	public void unregister() {
-		log.atInfo().log( "UnRegistering HyperSynesthesia");
+		log.atInfo().log( "Unregistering HyperSynesthesia");
 		super.unregister();
 	}
 }
