@@ -39,46 +39,44 @@ class ProjectProcessor implements RunPauseResettable {
 
 	@Override
 	public void run() {
-		taskManager.submit( Task.of( () -> {
-			try {
-				this.music = extractMusicData();
-				this.frameCount = (int)(music.getNumSamples() / (music.getSampleRate() / FRAMES_PER_SECOND));
-
-				try {
-					List<Future<DSP>> fftResults = new ArrayList<>( frameCount );
-
-					// Submit FFT compute tasks to the executor
-					for( int frameIndex = 0; frameIndex <= frameCount; frameIndex++ ) {
-						fftResults.add( taskManager.submit( new FftComputeTask( music, frameIndex ) ) );
-					}
-
-					// Collect the results
-					Queue<PrioritySpectrum> spectrumQueue = new PriorityQueue<>();
-					Queue<PriorityLoudness> loudnessQueue = new PriorityQueue<>();
-					for( Future<DSP> future : fftResults ) {
-						DSP dsp = future.get();
-						spectrumQueue.offer( new PrioritySpectrum( dsp ) );
-						loudnessQueue.offer( new PriorityLoudness( dsp ) );
-					}
-
-					// NEXT Process the results
-
-				} catch( Exception exception ) {
-					log.atError( exception ).log( "Error loading music data" );
-				}
-			} finally {
-				fireEvent( new ProjectProcessorEvent( this, ProjectProcessorEvent.Type.PROCESSING_COMPLETE ) );
-			}
-		} ) );
+		taskManager.submit( Task.of( this::processProject ) );
 	}
 
-	private MusicData extractMusicData() {
+	private void processProject() {
+		try {
+			this.music = extractMusicData();
+			this.frameCount = (int)(music.getNumSamples() / (music.getSampleRate() / FRAMES_PER_SECOND));
+
+			// Submit FFT compute tasks to the executor
+			List<Future<DSP>> fftResults = new ArrayList<>( frameCount );
+			for( int frameIndex = 0; frameIndex <= frameCount; frameIndex++ ) {
+				fftResults.add( taskManager.submit( new FftComputeTask( music, frameIndex ) ) );
+			}
+
+			// Collect the results. This blocks until the results are ready.
+			Queue<PrioritySpectrum> spectrumQueue = new PriorityQueue<>();
+			Queue<PriorityLoudness> loudnessQueue = new PriorityQueue<>();
+			for( Future<DSP> future : fftResults ) {
+				DSP dsp = future.get();
+				spectrumQueue.offer( new PrioritySpectrum( dsp ) );
+				loudnessQueue.offer( new PriorityLoudness( dsp ) );
+			}
+
+			// NEXT Submit the spectrum and loudness data for rendering the frames
+
+
+		} catch( Exception exception ) {
+			throw new TaskException( exception );
+		} finally {
+			fireEvent( new ProjectProcessorEvent( this, ProjectProcessorEvent.Type.PROCESSING_COMPLETE ) );
+		}
+	}
+
+	private MusicData extractMusicData() throws IOException {
 		try( stream ) {
 			MusicData result = new MusicData( stream ).load();
 			if( stream != null ) stream.close();
 			return result;
-		} catch( IOException exception ) {
-			throw new TaskException( exception );
 		}
 	}
 
