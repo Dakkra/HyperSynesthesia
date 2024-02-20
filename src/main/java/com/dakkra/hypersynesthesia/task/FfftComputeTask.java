@@ -24,11 +24,7 @@ public class FfftComputeTask extends Task<DSP> {
 	@Override
 	public DSP call() {
 		int[] samplesAvg = music.getSamplesAvg().subList( index * audioBufferSize, index * audioBufferSize + delta ).stream().mapToInt( i -> i ).toArray();
-		DSP dsp = new DSP();
-		dsp.processFull( samplesAvg );
-		//fftQueue.offer( new PrioritySpectrum( new ArrayList<>( Arrays.asList( Arrays.stream( dsp.getSpectrum() ).boxed().toArray( Double[]::new ) ) ), index ) );
-		//loudnessQueue.offer( new PriorityLoudness( dsp.getRMSLoudness(), index ) );
-		return dsp;
+		return new DSP().processFull( samplesAvg );
 	}
 
 }

@@ -14,7 +14,7 @@ public class DSP {
 	private double[] spectrum = null;
 
 	// Skips the fft
-	public void processLight( int[] samples ) {
+	public DSP processLight( int[] samples ) {
 		for( int sample : samples ) {
 			if( Math.abs( sample ) > peakLoudness ) {
 				peakLoudness = Math.abs( sample );
@@ -27,9 +27,11 @@ public class DSP {
 			sum += ((double)sample * (double)sample);
 		}
 		rms = Math.sqrt( sum / samples.length );
+
+		return this;
 	}
 
-	public void processFull( int[] samples ) {
+	public DSP processFull( int[] samples ) {
 		processLight( samples );
 
 		// Calculate FFT
@@ -90,6 +92,8 @@ public class DSP {
 		for( int i = 0; i < spectrum.length; i++ ) {
 			spectrum[ i ] /= max;
 		}
+
+		return this;
 	}
 
 	public int getPeak() {
