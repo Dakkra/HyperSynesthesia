@@ -52,17 +52,17 @@ class ProjectProcessor implements RunPauseResettable {
 						fftResults.add( taskManager.submit( new FftComputeTask( music, frameIndex ) ) );
 					}
 
+					// Collect the results
 					Queue<PrioritySpectrum> spectrumQueue = new PriorityQueue<>();
 					Queue<PriorityLoudness> loudnessQueue = new PriorityQueue<>();
-
-					// TODO Collect the results
 					for( Future<DSP> future : fftResults ) {
 						DSP dsp = future.get();
-
-						// TODO Do something with the results
 						spectrumQueue.offer( new PrioritySpectrum( dsp ) );
 						loudnessQueue.offer( new PriorityLoudness( dsp ) );
 					}
+
+					// NEXT Process the results
+
 				} catch( Exception exception ) {
 					log.atError( exception ).log( "Error loading music data" );
 				}
