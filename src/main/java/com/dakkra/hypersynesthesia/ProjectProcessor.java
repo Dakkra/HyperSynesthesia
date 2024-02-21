@@ -5,23 +5,24 @@ import com.avereon.xenon.task.Task;
 import com.avereon.xenon.task.TaskException;
 import com.avereon.xenon.task.TaskManager;
 import com.dakkra.hypersynesthesia.task.FftComputeTask;
-import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
-import com.github.kokorin.jaffree.ffmpeg.FFmpegResultFuture;
-import com.github.kokorin.jaffree.ffmpeg.FrameInput;
-import com.github.kokorin.jaffree.ffmpeg.UrlOutput;
+import com.github.kokorin.jaffree.ffmpeg.*;
 import lombok.CustomLog;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 
 @CustomLog
 class ProjectProcessor implements RunPauseResettable {
 
-	private static final int DEFAULT_FRAME_WIDTH = 1920;
+	private static final String DEFAULT_OUTPUT_PATH = "output.mp4";
 
-	private static final int DEFAULT_FRAME_HEIGHT = 1080;
+	private static final int DEFAULT_FRAME_WIDTH = 400;
+
+	private static final int DEFAULT_FRAME_HEIGHT = 400;
 
 	private static final int TIMEBASE = 60;
 
@@ -35,11 +36,11 @@ class ProjectProcessor implements RunPauseResettable {
 
 	private final InputStream stream;
 
-	private MusicData music;
-
-	private int frameCount;
+	private MusicData musicData;
 
 	private VideoData videoData;
+
+	private int frameCount;
 
 	public ProjectProcessor( TaskManager taskManager, InputStream stream ) {
 		this.taskManager = taskManager;
@@ -61,9 +62,13 @@ class ProjectProcessor implements RunPauseResettable {
 
 	void processProject() {
 		try {
+			// Cleanup previous output
+			Path out = Path.of( DEFAULT_OUTPUT_PATH );
+			Files.deleteIfExists( out );
+
 			log.atConfig().log( "Loading music data..." );
-			this.music = extractMusicData();
-			this.frameCount = (int)(music.getSampleCount() / (music.getSampleRate() / TIMEBASE));
+			this.musicData = extractMusicData();
+			this.frameCount = (int)(musicData.getSampleCount() / (musicData.getSampleRate() / TIMEBASE));
 			this.videoData = new VideoData( frameCount, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, TIMEBASE );
 			log.atInfo().log( "Music data loaded." );
 
@@ -71,7 +76,7 @@ class ProjectProcessor implements RunPauseResettable {
 			log.atConfig().log( "Calculating FFTs..." );
 			List<Future<DSP>> fftResults = new ArrayList<>( frameCount );
 			for( int frameIndex = 0; frameIndex <= frameCount; frameIndex++ ) {
-				fftResults.add( submitTask( new FftComputeTask( music, frameIndex ) ) );
+				fftResults.add( submitTask( new FftComputeTask( musicData, frameIndex ) ) );
 			}
 
 			// Collect the results. This blocks until the results are ready.
@@ -133,6 +138,8 @@ class ProjectProcessor implements RunPauseResettable {
 			if( spectraAvg.size() != loudnessAvg.size() ) {
 				throw new RuntimeException( "Spectra and loudness lists are not the same size" );
 			}
+			musicData.setSpectraAverage( spectraAvg );
+			musicData.setLoudnessAverage( loudnessAvg );
 
 			// Create the FFmpeg frame producer
 			FFmpegFrameSequencer sequencer = new FFmpegFrameSequencer( videoData );
@@ -140,19 +147,20 @@ class ProjectProcessor implements RunPauseResettable {
 			// Setup FFmpeg to consume frames as they are rendered
 			FFmpeg ffmpeg = FFmpeg.atPath();
 			ffmpeg.addArgument( "-xerror" );
-			ffmpeg.addArguments( "-loglevel", "info" );
+			ffmpeg.addArguments( "-loglevel", "error" );
 			ffmpeg.addInput( FrameInput.withProducer( sequencer ) );
 			//ffmpeg.addArguments( "-c:v", "ayuv" );
-			ffmpeg.addOutput( UrlOutput.toUrl( "output.mp4" ) );
+			ffmpeg.addOutput( UrlOutput.toUrl( out.toString() ) );
 			FFmpegResultFuture future = ffmpeg.executeAsync();
 
+			// Submit the frame render tasks to the executor
 			for( int index = 0; index < frameCount; index++ ) {
-				//log.atConfig().log( "Rendering frame %d of %d", index, frameCount );
-				submitTask( new FrameRenderTask( sequencer, index ).setPriority( Task.Priority.LOW ) );
+				submitTask( new FrameRenderTask( sequencer, videoData, musicData, index ).setPriority( Task.Priority.MEDIUM ) );
 			}
 
 			// Wait for the FFmpeg process to complete
 			future.get( 5, TimeUnit.MINUTES );
+			//			ffmpegEmulator.get( 5, TimeUnit.MINUTES );
 		} catch( Exception exception ) {
 			throw new TaskException( exception );
 		} finally {
@@ -175,7 +183,7 @@ class ProjectProcessor implements RunPauseResettable {
 
 	@Override
 	public void reset() {
-		tasks.forEach( t -> t.cancel( true ) );
+		tasks.forEach( t -> t.cancel( false ) );
 	}
 
 	public void addListener( ProjectProcessorListener listener ) {

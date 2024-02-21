@@ -23,13 +23,15 @@ public class FFmpegFrameSequencer implements FrameProducer {
 
 	private final BlockingQueue<Frame> readyQueue;
 
-	private int currentFrame;
+	private int nextExpectedFrame;
+
+	private boolean done;
 
 	public FFmpegFrameSequencer( VideoData videoData ) {
 		this.videoData = videoData;
 		this.stream = new Stream().setType( Stream.Type.VIDEO ).setTimebase( videoData.timebase() ).setWidth( videoData.width() ).setHeight( videoData.height() );
-		this.waitingQueue = new ArrayBlockingQueue<>( 1024 );
-		this.readyQueue = new ArrayBlockingQueue<>( 1024, true );
+		this.waitingQueue = new ArrayBlockingQueue<>( 4 * coreCount, true );
+		this.readyQueue = new ArrayBlockingQueue<>( 4 * coreCount, true );
 	}
 
 	@Override
@@ -39,11 +41,14 @@ public class FFmpegFrameSequencer implements FrameProducer {
 
 	@Override
 	public Frame produce() {
-		if( currentFrame == videoData.frameCount() ) return null;
+		if( done ) {
+			log.atConfig().log( "No more frames to produce!" );
+			return null;
+		}
 		try {
-			// FIXME The frames are not being processed in order
 			Frame frame = readyQueue.take();
-			log.atConfig().log( "Producing frame %d", frame.getStreamId() );
+			log.atConfig().log( "Producing frame %d", frame.getPts() );
+			if( frame.getPts() + 1 >= videoData.frameCount() ) done = true;
 			return frame;
 		} catch( InterruptedException exception ) {
 			return null;
@@ -52,7 +57,7 @@ public class FFmpegFrameSequencer implements FrameProducer {
 
 	public void addFrame( Frame frame ) throws InterruptedException {
 		waitingQueue.put( frame );
-		//log.atConfig().log( "Frame %d added to waiting queue, queue size %d", frame.getStreamId(), waitingQueue.size() );
+		//log.atConfig().log( "Frame %d added to waiting queue, queue size %d", frame.getPts(), waitingQueue.size() );
 		checkForAvailableFrames();
 	}
 
@@ -61,10 +66,12 @@ public class FFmpegFrameSequencer implements FrameProducer {
 		orderedFrames.sort( new FrameComparator() );
 
 		for( Frame frame : orderedFrames ) {
-			if( frame.getStreamId() == currentFrame ) {
-				readyQueue.put( waitingQueue.take() );
-				log.atConfig().log( "Frame %d added to ready queue, queue size %d", frame.getStreamId(), readyQueue.size() );
-				currentFrame++;
+			if( frame.getPts() == nextExpectedFrame ) {
+				if( waitingQueue.remove( frame ) ) readyQueue.put( frame );
+				log.atConfig().log( "Frame %d added to ready queue, queue size %d", frame.getPts(), readyQueue.size() );
+				nextExpectedFrame++;
+			} else {
+				break;
 			}
 		}
 	}
@@ -73,7 +80,7 @@ public class FFmpegFrameSequencer implements FrameProducer {
 
 		@Override
 		public int compare( Frame frame1, Frame frame2 ) {
-			return Long.compare( frame1.getStreamId(), frame2.getStreamId() );
+			return Long.compare( frame1.getPts(), frame2.getPts() );
 		}
 
 	}

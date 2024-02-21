@@ -4,6 +4,7 @@ import com.github.kokorin.jaffree.StreamType;
 import com.github.kokorin.jaffree.ffmpeg.*;
 import lombok.CustomLog;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -26,6 +27,14 @@ public class MusicData {
 
 	@Getter
 	private List<Integer> samplesAvg;
+
+	@Getter
+	@Setter
+	private List<List<Double>> spectraAverage;
+
+	@Getter
+	@Setter
+	private List<Double> loudnessAverage;
 
 	@Getter
 	private int sampleCount;
@@ -66,7 +75,7 @@ public class MusicData {
 		// Simple mean averaging of the left and right channels
 		samplesAvg = new ArrayList<>( sampleCount );
 		IntStream.range( 0, sampleCount ).forEach( ( index ) -> {
-			samplesAvg.add(  (samplesLeft.get( index ) + samplesRight.get( index ) / 2) );
+			samplesAvg.add( (samplesLeft.get( index ) + samplesRight.get( index ) / 2) );
 		} );
 
 		log.atDebug().log( "Loaded sample count=%d", sampleCount );
