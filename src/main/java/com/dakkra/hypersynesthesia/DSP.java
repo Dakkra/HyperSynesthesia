@@ -11,11 +11,12 @@ public class DSP {
 	@Getter
 	private int index;
 
-	private int peakLoudness = 0;
+	private int peakLoudness;
 
-	private double rms = 0;
+	private double rms;
 
-	private double[] spectrum = null;
+	@Getter
+	private double[] spectrum ;
 
 	// Skips the fft
 	public DSP processLight(int index,  int[] samples ) {
@@ -108,10 +109,6 @@ public class DSP {
 
 	public double getRMS() {
 		return rms;
-	}
-
-	public double[] getSpectrum() {
-		return spectrum;
 	}
 
 	public double getRMSLoudness() {

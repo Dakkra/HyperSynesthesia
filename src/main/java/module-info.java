@@ -1,11 +1,13 @@
 import com.dakkra.hypersynesthesia.HyperSynesthesia;
 
 module com.dakkra.hypersynthesthesia {
-	requires com.avereon.xenon;
 	requires static lombok;
+
+	requires com.avereon.xenon;
 	requires com.github.kokorin.jaffree;
-	requires org.slf4j;
 	requires fft4j;
+	requires java.logging;
+	requires org.slf4j;
 
 	opens com.dakkra.hypersynesthesia.bundles;
 	//opens com.dakkra.hypersynesthesia.settings;

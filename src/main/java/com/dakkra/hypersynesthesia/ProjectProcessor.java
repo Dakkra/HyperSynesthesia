@@ -5,7 +5,10 @@ import com.avereon.xenon.task.Task;
 import com.avereon.xenon.task.TaskException;
 import com.avereon.xenon.task.TaskManager;
 import com.dakkra.hypersynesthesia.task.FftComputeTask;
-import com.github.kokorin.jaffree.ffmpeg.*;
+import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
+import com.github.kokorin.jaffree.ffmpeg.FFmpegResultFuture;
+import com.github.kokorin.jaffree.ffmpeg.FrameInput;
+import com.github.kokorin.jaffree.ffmpeg.UrlOutput;
 import lombok.CustomLog;
 
 import java.io.IOException;
@@ -90,7 +93,7 @@ class ProjectProcessor implements RunPauseResettable {
 			log.atInfo().log( "FFTs calculated." );
 
 			log.atConfig().log( "Compute averaged data..." );
-			computeAverages( loudnessQueue, spectrumQueue );
+			computeAverages( musicData, loudnessQueue, spectrumQueue );
 			log.atInfo().log( "Averaged data computed." );
 
 			// Create the FFmpeg frame producer
@@ -120,7 +123,9 @@ class ProjectProcessor implements RunPauseResettable {
 		}
 	}
 
-	private void computeAverages( Queue<PriorityLoudness> loudnessQueue, Queue<PrioritySpectrum> spectrumQueue ) {
+	void computeAverages( MusicData musicData, Queue<PriorityLoudness> loudnessQueue, Queue<PrioritySpectrum> spectrumQueue ) {
+		// TODO Can this be moved to the MusicData class?
+
 		// Queues for AVG
 		List<List<Double>> spectraAvg = new ArrayList<>();
 		List<Double> loudnessAvg = new ArrayList<>();
