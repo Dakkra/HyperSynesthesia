@@ -28,7 +28,7 @@ public class MusicData {
 	private List<Integer> samplesAvg;
 
 	@Getter
-	private int numSamples;
+	private int sampleCount;
 
 	public MusicData( InputStream input ) {
 		this.input = input;
@@ -61,14 +61,15 @@ public class MusicData {
 			}
 		} ).disableStream( StreamType.VIDEO ).disableStream( StreamType.DATA ).disableStream( StreamType.SUBTITLE ) ).execute();
 
-		numSamples = samplesLeft.size();
-		log.atConfig().log( "Loaded %d samples", numSamples );
+		sampleCount = samplesLeft.size();
 
 		// Simple mean averaging of the left and right channels
-		samplesAvg = new ArrayList<>( numSamples );
-		IntStream.range( 0, numSamples ).forEach( ( index ) -> {
+		samplesAvg = new ArrayList<>( sampleCount );
+		IntStream.range( 0, sampleCount ).forEach( ( index ) -> {
 			samplesAvg.add(  (samplesLeft.get( index ) + samplesRight.get( index ) / 2) );
 		} );
+
+		log.atDebug().log( "Loaded sample count=%d", sampleCount );
 
 		return this;
 	}
