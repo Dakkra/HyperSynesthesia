@@ -79,7 +79,7 @@ class ProjectProcessor implements RunPauseResettable {
 				fftResults.add( submitTask( new FftComputeTask( musicData, frameIndex ) ) );
 			}
 
-			// Collect the results. This blocks until the results are ready.
+			// Collect the results. Block until the results are ready.
 			Queue<PrioritySpectrum> spectrumQueue = new PriorityQueue<>();
 			Queue<PriorityLoudness> loudnessQueue = new PriorityQueue<>();
 			for( Future<DSP> future : fftResults ) {
@@ -90,56 +90,8 @@ class ProjectProcessor implements RunPauseResettable {
 			log.atInfo().log( "FFTs calculated." );
 
 			log.atConfig().log( "Compute averaged data..." );
-
-			List<List<Double>> spectraAvg = new ArrayList<>();
-			List<Double> loudnessAvg = new ArrayList<>();
-
-			// Queues for AVG
-			Queue<Double> internalLoudnessQueue = new ArrayBlockingQueue<>( AVG_QUEUE_SIZE );
-			for( int index = 0; index < AVG_QUEUE_SIZE; index++ ) internalLoudnessQueue.add( 0.0 );
-
-			Queue<List<Double>> internalSpectraQueue = new ArrayBlockingQueue<>( AVG_QUEUE_SIZE );
-
-			for( int frameIdx = 0; frameIdx < frameCount; frameIdx++ ) {
-				// RMS section
-				double loudness = Objects.requireNonNull( loudnessQueue.poll() ).getLoudness();
-				double rmsAvg = internalLoudnessQueue.stream().mapToDouble( Double::doubleValue ).average().orElse( 0.0 );
-				internalLoudnessQueue.poll();
-				internalLoudnessQueue.add( loudness );
-
-				// Spectra section
-				double[] spectrum = Objects.requireNonNull( spectrumQueue.poll() ).getSpectrum();
-				for( int i = 0; i < AVG_QUEUE_SIZE; i++ ) {
-					internalSpectraQueue.offer( new ArrayList<>( Arrays.asList( Arrays.stream( new double[ spectrum.length ] ).boxed().toArray( Double[]::new ) ) ) );
-				}
-				internalSpectraQueue.poll();
-				internalSpectraQueue.offer( new ArrayList<>( Arrays.asList( Arrays.stream( spectrum ).boxed().toArray( Double[]::new ) ) ) );
-
-				// Smooth spectrum
-				ArrayList<Double> spectrumAvg = new ArrayList<>( spectrum.length );
-				for( int bucketIndex = 0; bucketIndex < spectrum.length; bucketIndex++ ) {
-					double bucketSum = 0;
-					for( List<Double> nextSpectrum : internalSpectraQueue ) {
-						if( bucketIndex < nextSpectrum.size() ) {
-							bucketSum += nextSpectrum.get( bucketIndex );
-						}
-					}
-					// Mean value between spectra for this bucket
-					spectrumAvg.add( bucketSum / internalSpectraQueue.size() );
-				}
-
-				// Add to average lists
-				spectraAvg.add( spectrumAvg );
-				loudnessAvg.add( rmsAvg );
-			}
+			computeAverages( loudnessQueue, spectrumQueue );
 			log.atInfo().log( "Averaged data computed." );
-
-			// Check if the spectra and loudness lists are the same size
-			if( spectraAvg.size() != loudnessAvg.size() ) {
-				throw new RuntimeException( "Spectra and loudness lists are not the same size" );
-			}
-			musicData.setSpectraAverage( spectraAvg );
-			musicData.setLoudnessAverage( loudnessAvg );
 
 			// Create the FFmpeg frame producer
 			FFmpegFrameSequencer sequencer = new FFmpegFrameSequencer( videoData );
@@ -159,13 +111,63 @@ class ProjectProcessor implements RunPauseResettable {
 			}
 
 			// Wait for the FFmpeg process to complete
-			future.get( 5, TimeUnit.MINUTES );
-			//			ffmpegEmulator.get( 5, TimeUnit.MINUTES );
+			// FIXME The wait time needs to be configurable
+			future.get( 1, TimeUnit.HOURS );
 		} catch( Exception exception ) {
 			throw new TaskException( exception );
 		} finally {
 			fireEvent( new ProjectProcessorEvent( this, ProjectProcessorEvent.Type.PROCESSING_COMPLETE ) );
 		}
+	}
+
+	private void computeAverages( Queue<PriorityLoudness> loudnessQueue, Queue<PrioritySpectrum> spectrumQueue ) {
+		// Queues for AVG
+		List<List<Double>> spectraAvg = new ArrayList<>();
+		List<Double> loudnessAvg = new ArrayList<>();
+		Queue<List<Double>> internalSpectraQueue = new ArrayBlockingQueue<>( AVG_QUEUE_SIZE );
+		Queue<Double> internalLoudnessQueue = new ArrayBlockingQueue<>( AVG_QUEUE_SIZE );
+		for( int index = 0; index < AVG_QUEUE_SIZE; index++ ) internalLoudnessQueue.add( 0.0 );
+
+		for( int frameIdx = 0; frameIdx < frameCount; frameIdx++ ) {
+			// RMS section
+			double loudness = Objects.requireNonNull( loudnessQueue.poll() ).getLoudness();
+			double rmsAvg = internalLoudnessQueue.stream().mapToDouble( Double::doubleValue ).average().orElse( 0.0 );
+			internalLoudnessQueue.poll();
+			internalLoudnessQueue.add( loudness );
+
+			// Spectra section
+			double[] spectrum = Objects.requireNonNull( spectrumQueue.poll() ).getSpectrum();
+			for( int i = 0; i < AVG_QUEUE_SIZE; i++ ) {
+				internalSpectraQueue.offer( new ArrayList<>( Arrays.asList( Arrays.stream( new double[ spectrum.length ] ).boxed().toArray( Double[]::new ) ) ) );
+			}
+			internalSpectraQueue.poll();
+			internalSpectraQueue.offer( new ArrayList<>( Arrays.asList( Arrays.stream( spectrum ).boxed().toArray( Double[]::new ) ) ) );
+
+			// Smooth spectrum
+			ArrayList<Double> spectrumAvg = new ArrayList<>( spectrum.length );
+			for( int bucketIndex = 0; bucketIndex < spectrum.length; bucketIndex++ ) {
+				double bucketSum = 0;
+				for( List<Double> nextSpectrum : internalSpectraQueue ) {
+					if( bucketIndex < nextSpectrum.size() ) {
+						bucketSum += nextSpectrum.get( bucketIndex );
+					}
+				}
+				// Mean value between spectra for this bucket
+				spectrumAvg.add( bucketSum / internalSpectraQueue.size() );
+			}
+
+			// Add to average lists
+			spectraAvg.add( spectrumAvg );
+			loudnessAvg.add( rmsAvg );
+		}
+
+		// Check if the spectra and loudness lists are the same size
+		if( spectraAvg.size() != loudnessAvg.size() ) {
+			throw new RuntimeException( "Spectra and loudness lists are not the same size" );
+		}
+
+		musicData.setSpectraAverage( spectraAvg );
+		musicData.setLoudnessAverage( loudnessAvg );
 	}
 
 	MusicData extractMusicData() throws IOException {

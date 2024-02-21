@@ -61,12 +61,15 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 		@Override
 		public void pause() {
-			processor.pause();
+			reset();
 		}
 
 		@Override
 		public void reset() {
 			processor.reset();
+
+			// Allow the GC to clean up the processor
+			processor = null;
 		}
 
 	}
