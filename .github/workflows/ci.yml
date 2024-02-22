@@ -72,26 +72,28 @@ jobs:
           echo "RELEASE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
 
       - name: Upload Artifact
-        if: github.ref == 'refs/heads/main'
+#        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v3
         with:
-          name: hypersynesthesia-plugin.jar
-          path: target/hypersynesthesia-${{env.RELEASE_VERSION}}.jar
+          name: hypersynesthesia-artifacts
+          path: |
+            src/main/etc/market/catalog.card
+            target/hypersynesthesia-${{env.RELEASE_VERSION}}.jar
+            target/main/java/META-INF/product.card
 
   deploy:
 
     runs-on: ubuntu-latest
 
     needs: build
-    if: github.ref == 'refs/heads/main'
+#    if: github.ref == 'refs/heads/main'
     steps:
       - run: mkdir build
 
       - name: Download Artifact
         uses: actions/download-artifact@v2
         with:
-          name: hypersynesthesia-plugin.jar
-          path: build/
+          name: hypersynesthesia-artifacts
 
       - name: Get SSH Key
         run: |
@@ -107,7 +109,7 @@ jobs:
 
       # The path /var/www/html/download/xenon/market/latest needs to exist on the server
       - name: Deploy market update
-        run: scp -r src/main/etc/market/catalog ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/catalog
+        run: scp -r src/main/etc/market/catalog.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/catalog
 
       # The path /var/www/html/download/xenon/market/latest/hypersynesthesia needs to exist on the server
 #      - name: Deploy plugin
