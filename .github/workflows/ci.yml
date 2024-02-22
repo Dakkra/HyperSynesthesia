@@ -91,7 +91,7 @@ jobs:
       - run: mkdir build
 
       - name: Download Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: hypersynesthesia-artifacts
 
