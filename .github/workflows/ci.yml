@@ -105,5 +105,10 @@ jobs:
 
       - run: chmod 600 ~/.ssh/id_rsa
 
+      # The path /var/www/html/download/xenon/market/latest needs to exist on the server
+      - name: Deploy market update
+        run: scp -r src/main/etc/market/catalog ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/catalog
+
+      # The path /var/www/html/download/xenon/market/latest/hypersynesthesia needs to exist on the server
 #      - name: Deploy plugin
-#        run: scp -r build/* ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html
+#        run: scp -r target/main/java/META-INF/product.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/card
