@@ -113,15 +113,15 @@ jobs:
           if [ $? -ne 0 ]; then exit 1; fi
           scp -r src/main/etc/market/catalog.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/catalog
           if [ $? -ne 0 ]; then exit 1; fi
-          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 600 /var/www/html/download/xenon/market/latest/catalog;"
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/catalog;"
 
       - name: Deploy plugin card
         run: |
-          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest;"
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia;"
           if [ $? -ne 0 ]; then exit 1; fi
           scp -r target/main/java/META-INF/product.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/card
           if [ $? -ne 0 ]; then exit 1; fi
-          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 600 /var/www/html/download/xenon/market/latest/hypersynesthesia/card;"
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/card;"
 
       - name: Deploy plugin pack
         run: |
@@ -129,4 +129,4 @@ jobs:
           if [ $? -ne 0 ]; then exit 1; fi
           scp -r target/hypersynesthesia-${{env.RELEASE_VERSION}}.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/pack
           if [ $? -ne 0 ]; then exit 1; fi
-          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 600 /var/www/html/download/xenon/market/latest/hypersynesthesia/pack;"
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/pack;"
