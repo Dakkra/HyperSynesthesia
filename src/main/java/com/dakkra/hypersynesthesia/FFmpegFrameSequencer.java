@@ -30,8 +30,8 @@ public class FFmpegFrameSequencer implements FrameProducer {
 	public FFmpegFrameSequencer( VideoData videoData ) {
 		this.videoData = videoData;
 		this.stream = new Stream().setType( Stream.Type.VIDEO ).setTimebase( videoData.timebase() ).setWidth( videoData.width() ).setHeight( videoData.height() );
-		this.waitingQueue = new ArrayBlockingQueue<>( 4 * coreCount, true );
-		this.readyQueue = new ArrayBlockingQueue<>( 4 * coreCount, true );
+		this.waitingQueue = new ArrayBlockingQueue<>( 8 * coreCount, true );
+		this.readyQueue = new ArrayBlockingQueue<>( 8 * coreCount, true );
 	}
 
 	@Override
@@ -46,6 +46,8 @@ public class FFmpegFrameSequencer implements FrameProducer {
 			return null;
 		}
 		try {
+			// Don't check for available frames here. It causes deadlock.
+			//checkForAvailableFrames();
 			Frame frame = readyQueue.take();
 			log.atConfig().log( "Producing frame %d", frame.getPts() );
 			if( frame.getPts() + 1 >= videoData.frameCount() ) done = true;
@@ -68,7 +70,7 @@ public class FFmpegFrameSequencer implements FrameProducer {
 		for( Frame frame : orderedFrames ) {
 			if( frame.getPts() == nextExpectedFrame ) {
 				if( waitingQueue.remove( frame ) ) readyQueue.put( frame );
-				log.atConfig().log( "Frame %d added to ready queue, queue size %d", frame.getPts(), readyQueue.size() );
+				//log.atConfig().log( "Frame %d added to ready queue, queue size %d", frame.getPts(), readyQueue.size() );
 				nextExpectedFrame++;
 			} else {
 				break;

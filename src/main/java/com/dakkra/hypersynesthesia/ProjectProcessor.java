@@ -71,16 +71,18 @@ class ProjectProcessor implements RunPauseResettable {
 
 			log.atConfig().log( "Loading music data..." );
 			this.musicData = extractMusicData();
-			this.frameCount = (int)(musicData.getSampleCount() / (musicData.getSampleRate() / TIMEBASE));
+			this.frameCount = Math.round(((float)musicData.getSampleCount() / ((float)musicData.getSampleRate() / TIMEBASE)));
 			this.videoData = new VideoData( frameCount, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, TIMEBASE );
 			log.atInfo().log( "Music data loaded." );
+			log.atInfo().log( "Frame count: " + frameCount );
 
 			// Submit FFT compute tasks to the executor
 			log.atConfig().log( "Calculating FFTs..." );
 			List<Future<DSP>> fftResults = new ArrayList<>( frameCount );
-			for( int frameIndex = 0; frameIndex <= frameCount; frameIndex++ ) {
+			for( int frameIndex = 0; frameIndex < frameCount; frameIndex++ ) {
 				fftResults.add( submitTask( new FftComputeTask( musicData, frameIndex ) ) );
 			}
+			log.atInfo().log( "Num queued spectra frames: " + fftResults.size() );
 
 			// Collect the results. Block until the results are ready.
 			Queue<PrioritySpectrum> spectrumQueue = new PriorityQueue<>();
@@ -91,6 +93,7 @@ class ProjectProcessor implements RunPauseResettable {
 				loudnessQueue.offer( new PriorityLoudness( dsp ) );
 			}
 			log.atInfo().log( "FFTs calculated." );
+			log.atInfo().log( "Num queued spectra frames: " + spectrumQueue.size() );
 
 			log.atConfig().log( "Compute averaged data..." );
 			computeAverages( musicData, loudnessQueue, spectrumQueue );
@@ -114,8 +117,7 @@ class ProjectProcessor implements RunPauseResettable {
 			}
 
 			// Wait for the FFmpeg process to complete
-			// FIXME The wait time needs to be configurable
-			future.get( 1, TimeUnit.HOURS );
+			future.get();
 		} catch( Exception exception ) {
 			throw new TaskException( exception );
 		} finally {
