@@ -107,14 +107,26 @@ jobs:
 
       - run: chmod 600 ~/.ssh/id_rsa
 
-      # The path /var/www/html/download/xenon/market/latest needs to exist on the server
       - name: Deploy catalog card
-        run: scp -r src/main/etc/market/catalog.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/catalog
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r src/main/etc/market/catalog.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/catalog
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 600 /var/www/html/download/xenon/market/latest/catalog;"
 
-      # The path /var/www/html/download/xenon/market/latest/hypersynesthesia needs to exist on the server
       - name: Deploy plugin card
-        run: scp -r target/main/java/META-INF/product.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/card
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r target/main/java/META-INF/product.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/card
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 600 /var/www/html/download/xenon/market/latest/hypersynesthesia/card;"
 
-      # The path /var/www/html/download/xenon/market/latest/hypersynesthesia needs to exist on the server
       - name: Deploy plugin pack
-        run: scp -r target/hypersynesthesia-${{env.RELEASE_VERSION}}.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/pack
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r target/hypersynesthesia-${{env.RELEASE_VERSION}}.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/pack
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 600 /var/www/html/download/xenon/market/latest/hypersynesthesia/pack;"
