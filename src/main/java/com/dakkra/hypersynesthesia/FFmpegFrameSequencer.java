@@ -47,7 +47,6 @@ public class FFmpegFrameSequencer implements FrameProducer {
 		}
 		try {
 			// Don't check for available frames here. It causes deadlock.
-			//checkForAvailableFrames();
 			Frame frame = readyQueue.take();
 			log.atConfig().log( "Producing frame %d", frame.getPts() );
 			if( frame.getPts() + 1 >= videoData.frameCount() ) done = true;
