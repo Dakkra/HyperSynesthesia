@@ -66,9 +66,10 @@ jobs:
         run: |
           mvn ${{env.MAVEN_PARMS}} package -Dmaven.test.skip=true
 
-      - name: Maven Deploy
-        run: |
-          mvn ${{env.MAVEN_PARMS}} deploy -Dmaven.test.skip=true
+#      What repo should these artifacts be deployed to?
+#      - name: Maven Deploy
+#        run: |
+#          mvn ${{env.MAVEN_PARMS}} deploy -Dmaven.test.skip=true
 
       - name: Get Project Version
         id: get_version
