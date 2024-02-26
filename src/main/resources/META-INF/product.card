@@ -4,7 +4,7 @@
   "version": "${project.version}",
   "timestamp": "${project.timestamp}",
   "packaging": "mod",
-  "icons": [ "${project.artifactId}", "<https://www.avereon.com/download/stable/avereon/provider/icon>" ],
+  "icons": [ "${project.artifactId}", "https://hypersynesthesia.com/logo-large.png" ],
   "name": "${project.name}",
   "provider": "${project.organization.name}",
   "providerUrl": "${project.organization.url}",
