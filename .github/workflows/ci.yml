@@ -55,16 +55,20 @@ jobs:
         run: |
           mvn ${{env.MAVEN_PARMS}} compile
 
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
       - name: Unit Tests
         run: |
           mvn ${{env.MAVEN_PARMS}} test
 
       - name: Package
         run: |
-          mvn ${{env.MAVEN_PARMS}} package
+          mvn ${{env.MAVEN_PARMS}} package -Dmaven.test.skip=true
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+      - name: Maven Deploy
+        run: |
+          mvn ${{env.MAVEN_PARMS}} deploy -Dmaven.test.skip=true
 
       - name: Get Project Version
         id: get_version
@@ -90,11 +94,6 @@ jobs:
     steps:
       - run: mkdir build
 
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: hypersynesthesia-artifacts
-
       - name: Get SSH Key
         run: |
           mkdir ~/.ssh
@@ -106,6 +105,15 @@ jobs:
           KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
 
       - run: chmod 600 ~/.ssh/id_rsa
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: hypersynesthesia-artifacts
+
+      - name: Build Packs
+        run: |
+          mvn ${{env.MAVEN_PARMS}} verify -P testui,packs
 
       - name: Deploy catalog card
         run: |
