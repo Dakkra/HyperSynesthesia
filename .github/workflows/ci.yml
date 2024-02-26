@@ -117,16 +117,21 @@ jobs:
 
       - name: Deploy plugin card
         run: |
-          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia;"
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
           if [ $? -ne 0 ]; then exit 1; fi
-          scp -r target/main/java/META-INF/product.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/card
+          scp -r target/main/java/META-INF/product.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/card
           if [ $? -ne 0 ]; then exit 1; fi
-          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/product/card;"
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/card;"
 
       - name: Deploy plugin pack
         run: |
-          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia;"
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
           if [ $? -ne 0 ]; then exit 1; fi
-          scp -r target/hypersynesthesia-*.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/pack
+          scp -r target/hypersynesthesia-*.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/pack
           if [ $? -ne 0 ]; then exit 1; fi
-          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/product/pack;"
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/pack;"
+
+      - name: Support MacOS and Windows
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "ln -sf /var/www/html/download/xenon/market/latest/hypersynesthesia/linux /var/www/html/download/xenon/market/latest/hypersynesthesia/macos"
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "ln -sf /var/www/html/download/xenon/market/latest/hypersynesthesia/linux /var/www/html/download/xenon/market/latest/hypersynesthesia/windows"
