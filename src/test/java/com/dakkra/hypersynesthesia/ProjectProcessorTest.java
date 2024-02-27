@@ -3,7 +3,6 @@ package com.dakkra.hypersynesthesia;
 import com.avereon.xenon.task.TaskManager;
 import lombok.CustomLog;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,7 +55,7 @@ class ProjectProcessorTest {
 	}
 
 	@Test
-	@Disabled( "Invalid data found when processing input" )
+	//@Disabled( "Invalid data found when processing input" )
 	public void testProcessProject() {
 		processor.processProject();
 	}
