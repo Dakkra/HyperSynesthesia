@@ -32,6 +32,11 @@ jobs:
         run: |
           Xvfb ${{env.DISPLAY}} ${{env.XVFB_PARMS}} &
 
+      - name: Set up FFMPEG
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
