@@ -87,8 +87,8 @@ jobs:
           name: hypersynesthesia-artifacts
           path: |
             src/main/etc/market/catalog.card
-            target/hypersynesthesia-${{env.RELEASE_VERSION}}.jar
             target/main/java/META-INF/product.card
+            target/product.jar
 
   deploy:
 
