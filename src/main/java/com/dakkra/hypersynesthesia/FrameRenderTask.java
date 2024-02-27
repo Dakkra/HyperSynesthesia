@@ -37,7 +37,7 @@ public class FrameRenderTask extends Task<Frame> {
 		int width = videoData.width();
 		int height = videoData.height();
 
-		BufferedImage image = new BufferedImage( 1920, 1080, BufferedImage.TYPE_3BYTE_BGR );
+		BufferedImage image = new BufferedImage( width, height, BufferedImage.TYPE_3BYTE_BGR );
 		Graphics2D graphics = image.createGraphics();
 
 		// Render the background

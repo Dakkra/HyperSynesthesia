@@ -30,8 +30,8 @@ public class FFmpegFrameSequencer implements FrameProducer {
 	public FFmpegFrameSequencer( VideoData videoData ) {
 		this.videoData = videoData;
 		this.stream = new Stream().setType( Stream.Type.VIDEO ).setTimebase( videoData.timebase() ).setWidth( videoData.width() ).setHeight( videoData.height() );
-		this.waitingQueue = new ArrayBlockingQueue<>( 8 * coreCount, true );
-		this.readyQueue = new ArrayBlockingQueue<>( 8 * coreCount, true );
+		this.waitingQueue = new ArrayBlockingQueue<>( 16 * coreCount, true );
+		this.readyQueue = new ArrayBlockingQueue<>( 16 * coreCount, true );
 	}
 
 	@Override

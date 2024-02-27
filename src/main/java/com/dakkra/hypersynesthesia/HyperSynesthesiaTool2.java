@@ -14,7 +14,7 @@ import java.io.InputStream;
 public class HyperSynesthesiaTool2 extends GuidedTool {
 
 	// FIXME Temporary sample data
-	private static final String resource = "samples/DemoTrack.wav";
+	private static final String resource = "samples/drums.wav";
 
 	private final RunPauseAction runPauseAction;
 
