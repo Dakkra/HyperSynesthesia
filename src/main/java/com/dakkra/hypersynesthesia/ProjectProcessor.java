@@ -117,7 +117,9 @@ class ProjectProcessor implements RunPauseResettable {
 			}
 
 			// Wait for the FFmpeg process to complete
+			log.atInfo().log( "Waiting for FFmpeg to complete..." );
 			future.get();
+			log.atInfo().log( "FFMPEG Finished encoding" );
 		} catch( Exception exception ) {
 			throw new TaskException( exception );
 		} finally {
