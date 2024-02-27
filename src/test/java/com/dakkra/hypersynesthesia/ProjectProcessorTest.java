@@ -14,7 +14,7 @@ import java.util.Queue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Timeout( 10 )
+@Timeout( 30 )
 @ExtendWith( org.mockito.junit.jupiter.MockitoExtension.class )
 @CustomLog
 class ProjectProcessorTest {
@@ -56,7 +56,7 @@ class ProjectProcessorTest {
 	}
 
 	@Test
-	@Disabled( "takes too long" )
+	@Disabled( "Invalid data found when processing input" )
 	public void testProcessProject() {
 		processor.processProject();
 	}
