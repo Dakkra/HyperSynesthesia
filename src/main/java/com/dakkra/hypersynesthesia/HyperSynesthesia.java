@@ -7,11 +7,7 @@ import lombok.CustomLog;
 @CustomLog
 public class HyperSynesthesia extends Mod {
 
-	private final ProjectAssetType projectAssetType;
-
-	public HyperSynesthesia() {
-		projectAssetType = new ProjectAssetType( this );
-	}
+	private ProjectAssetType projectAssetType;
 
 	@Override
 	public void register() {
@@ -22,26 +18,31 @@ public class HyperSynesthesia extends Mod {
 	@Override
 	public void startup() throws Exception {
 		super.startup();
-		log.atInfo().log( "Initializing HyperSynesthesia");
+		log.atInfo().log( "Starting HyperSynesthesia");
 
+		projectAssetType = new ProjectAssetType( this );
 		registerAssetType( projectAssetType );
-		ToolRegistration registration = new ToolRegistration( this, HyperSynesthesiaTool.class);
-		registration.setName( "HyperSynestheisa Tool" );
-		registerTool( projectAssetType, registration );
+		//ToolRegistration registration = new ToolRegistration( this, HyperSynesthesiaTool.class);
+		//registration.setName( "HyperSynestheisa Tool" );
+		//registerTool( projectAssetType, registration );
+		ToolRegistration registrationV2 = new ToolRegistration( this, HyperSynesthesiaTool2.class);
+		registrationV2.setName( "HyperSynestheisa Tool v2" );
+		registerTool( projectAssetType, registrationV2 );
 	}
 
 	@Override
 	public void shutdown() throws Exception {
-		super.shutdown();
 		log.atInfo().log( "Closing HyperSynesthesia");
 
-		unregisterTool( projectAssetType, HyperSynesthesiaTool.class );
+		unregisterTool( projectAssetType, HyperSynesthesiaTool2.class );
+		//unregisterTool( projectAssetType, HyperSynesthesiaTool.class );
 		unregisterAssetType( projectAssetType );
+		super.shutdown();
 	}
 
 	@Override
 	public void unregister() {
+		log.atInfo().log( "Unregistering HyperSynesthesia");
 		super.unregister();
-		log.atInfo().log( "UnRegistering HyperSynesthesia");
 	}
 }
