@@ -86,12 +86,13 @@ jobs:
           echo "RELEASE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
 
       - name: Upload Artifact
-        if: github.ref == 'refs/heads/main'
+#        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: hypersynesthesia-artifacts
           path: |
             src/main/etc/market/catalog.card
+            src/main/etc/market/hypersynesthesia-icon.png
             target/main/java/META-INF/product.card
             target/product.jar
 
