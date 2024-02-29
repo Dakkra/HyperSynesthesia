@@ -1,1 +1,7 @@
-{"timestamp":"1708654498000","products":["hypersynesthesia"]}
+{
+	"timestamp":"1708654498000",
+	"products":["hypersynesthesia"],
+	"repo": {
+		"icons":"https://hypersynesthesia.com/download/xenon/market/latest/icon"
+	}
+}

@@ -86,7 +86,7 @@ jobs:
           echo "RELEASE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
 
       - name: Upload Artifact
-        if: github.ref == 'refs/heads/main'
+#        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: hypersynesthesia-artifacts
@@ -101,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
 
     needs: build
-    if: github.ref == 'refs/heads/main'
+#    if: github.ref == 'refs/heads/main'
     steps:
       - run: mkdir build
 
@@ -129,6 +129,14 @@ jobs:
           scp -r src/main/etc/market/catalog.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/catalog
           if [ $? -ne 0 ]; then exit 1; fi
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/catalog;"
+
+      - name: Deploy catalog icon
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r src/main/etc/market/hypersynesthesia-icon.png ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/icon
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/icon;"
 
       - name: Deploy plugin pack
         run: |
