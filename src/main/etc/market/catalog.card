@@ -1,7 +1,6 @@
 {
-	"timestamp":"1708654498000",
+	"name":"Hypersynesthesia Latest",
+	"icons":["hypersynesthesia","https://hypersynesthesia.com/download/xenon/market/latest/icon"]
 	"products":["hypersynesthesia"],
-	"repo": {
-		"icons":["https://hypersynesthesia.com/download/xenon/market/latest/icon"]
-	}
+	"timestamp":"1708654498000"
 }
