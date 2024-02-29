@@ -32,6 +32,11 @@ jobs:
         run: |
           Xvfb ${{env.DISPLAY}} ${{env.XVFB_PARMS}} &
 
+      - name: Set up FFMPEG
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -139,6 +144,14 @@ jobs:
           scp -r target/main/java/META-INF/product.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/card
           if [ $? -ne 0 ]; then exit 1; fi
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/card;"
+
+      - name: Deploy plugin icon
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r src/main/etc/market/hypersynesthesia-icon.png ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/icon
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/icon;"
 
       - name: Support MacOS and Windows
         run: |
