@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   build:
-    name: Build
+    name: Build, Test, Pack
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -92,13 +92,13 @@ jobs:
           name: hypersynesthesia-artifacts
           path: |
             src/main/etc/market/catalog.card
+            src/main/etc/market/hypersynesthesia-icon.png
             target/main/java/META-INF/product.card
             target/product.jar
 
   deploy:
-
+    name: Deploy to Market
     runs-on: ubuntu-latest
-
     needs: build
     if: github.ref == 'refs/heads/main'
     steps:
@@ -128,6 +128,14 @@ jobs:
           scp -r src/main/etc/market/catalog.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/catalog
           if [ $? -ne 0 ]; then exit 1; fi
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/catalog;"
+
+      - name: Deploy catalog icon
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r src/main/etc/market/hypersynesthesia-icon.png ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/icon
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/icon;"
 
       - name: Deploy plugin pack
         run: |
