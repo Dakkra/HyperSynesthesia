@@ -1,7 +1,7 @@
 {
 	"name":"Hypersynesthesia Latest",
 	"url":"https://hypersynesthesia.com/download/xenon/market/latest",
-	"icons":["hypersynesthesia","https://hypersynesthesia.com/download/xenon/market/latest/icon"]
+	"icons":["hypersynesthesia","https://hypersynesthesia.com/download/xenon/market/latest/icon"],
 	"products":["hypersynesthesia"],
 	"timestamp":"1708654498000"
 }
