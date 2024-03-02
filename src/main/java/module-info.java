@@ -1,3 +1,4 @@
+import com.avereon.xenon.Module;
 import com.dakkra.hypersynesthesia.HyperSynesthesia;
 
 module com.dakkra.hypersynthesthesia {
@@ -8,6 +9,6 @@ module com.dakkra.hypersynthesthesia {
 	requires fft4j;
 
 	exports com.dakkra.hypersynesthesia to com.avereon.xenon;
-	provides com.avereon.xenon.Mod with HyperSynesthesia;
+	provides Module with HyperSynesthesia;
 	opens com.dakkra.hypersynesthesia to org.testfx.junit5;
 }
