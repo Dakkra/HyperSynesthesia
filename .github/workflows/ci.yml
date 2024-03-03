@@ -10,7 +10,7 @@ on:
 env:
   DISPLAY: ":99"
   JAVA_DISTRO: "temurin"
-  JAVA_VERSION: "17"
+  JAVA_VERSION: "21"
   MAVEN_PARMS: "-B -U -V"
   XVFB_PARMS: "-screen 0 1920x1080x24 -nolisten unix"
 
@@ -21,25 +21,30 @@ permissions:
 
 jobs:
   build:
-    name: Build
+    name: Build, Test, Pack
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Fetch sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Virtual Display
         run: |
           Xvfb ${{env.DISPLAY}} ${{env.XVFB_PARMS}} &
 
+      - name: Set up FFMPEG
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
+
       - name: Set up Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: ${{env.JAVA_DISTRO}}
           java-version: ${{env.JAVA_VERSION}}
 
       - name: Maven Repository Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -47,7 +52,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: java
 
@@ -55,16 +60,25 @@ jobs:
         run: |
           mvn ${{env.MAVEN_PARMS}} compile
 
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
       - name: Unit Tests
         run: |
           mvn ${{env.MAVEN_PARMS}} test
-          
+
       - name: Package
         run: |
-          mvn ${{env.MAVEN_PARMS}} package
+          mvn ${{env.MAVEN_PARMS}} package -Dmaven.test.skip=true
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+#      What repo should these artifacts be deployed to?
+#      - name: Maven Deploy
+#        run: |
+#          mvn ${{env.MAVEN_PARMS}} deploy -Dmaven.test.skip=true
+
+      - name: Build Packs
+        run: |
+          mvn ${{env.MAVEN_PARMS}} verify -Dmaven.test.skip=true -P testui,packs
 
       - name: Get Project Version
         id: get_version
@@ -73,9 +87,81 @@ jobs:
 
       - name: Upload Artifact
         if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: hypersynesthesia-plugin.jar
-          path: target/hypersynesthesia-${{env.RELEASE_VERSION}}.jar
+          name: hypersynesthesia-artifacts
+          path: |
+            src/main/etc/market/catalog.card
+            src/main/etc/market/hypersynesthesia-icon.png
+            target/main/java/META-INF/product.card
+            target/product.jar
 
-# All need to upload the catalog and the product card
+  deploy:
+    name: Deploy to Market
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - run: mkdir build
+
+      - name: Get SSH Key
+        run: |
+          mkdir ~/.ssh
+          printf %s "$DEPLOYMENT_KEY" > ~/.ssh/id_rsa
+          printf %s "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+        shell: bash
+        env:
+          DEPLOYMENT_KEY: ${{ secrets.SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+
+      - run: chmod 600 ~/.ssh/id_rsa
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: hypersynesthesia-artifacts
+
+      - name: Deploy catalog card
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r src/main/etc/market/catalog.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/catalog
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/catalog;"
+
+      - name: Deploy catalog icon
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r src/main/etc/market/hypersynesthesia-icon.png ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/icon
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/icon;"
+
+      - name: Deploy plugin pack
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r target/product.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/pack
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/pack;"
+
+      - name: Deploy plugin card
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r target/main/java/META-INF/product.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/card
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/card;"
+
+      - name: Deploy plugin icon
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
+          if [ $? -ne 0 ]; then exit 1; fi
+          scp -r src/main/etc/market/hypersynesthesia-icon.png ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:/var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/icon
+          if [ $? -ne 0 ]; then exit 1; fi
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/icon;"
+
+      - name: Support MacOS and Windows
+        run: |
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "ln -sf /var/www/html/download/xenon/market/latest/hypersynesthesia/linux /var/www/html/download/xenon/market/latest/hypersynesthesia/macos"
+          ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "ln -sf /var/www/html/download/xenon/market/latest/hypersynesthesia/linux /var/www/html/download/xenon/market/latest/hypersynesthesia/windows"
