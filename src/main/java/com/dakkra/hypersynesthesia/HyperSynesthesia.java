@@ -1,11 +1,11 @@
 package com.dakkra.hypersynesthesia;
 
-import com.avereon.xenon.Mod;
+import com.avereon.xenon.Module;
 import com.avereon.xenon.ToolRegistration;
 import lombok.CustomLog;
 
 @CustomLog
-public class HyperSynesthesia extends Mod {
+public class HyperSynesthesia extends Module {
 
 	private final ProjectAssetType projectAssetType;
 
