@@ -1,8 +1,8 @@
 package com.dakkra.hypersynesthesia;
 
-import com.avereon.zerra.BaseModTestCase;
+import com.avereon.zerra.BaseModUiTestCase;
 
-class HyperSynesthesiaTest extends BaseModTestCase<HyperSynesthesia> {
+class HyperSynesthesiaTest extends BaseModUiTestCase<HyperSynesthesia> {
 
 	protected HyperSynesthesiaTest() {
 		super( HyperSynesthesia.class );
