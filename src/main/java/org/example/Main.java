@@ -18,13 +18,55 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Queue;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.IntStream;
 
 class ColorUtil {
 
 	public static Color colorWithIntensity( Color color, double intensity ) {
 		return new Color( (int)(color.getRed() * intensity), (int)(color.getGreen() * intensity), (int)(color.getBlue() * intensity), color.getAlpha() );
 	}
+}
 
+class PrioritySpectrum implements Comparable {
+
+	private ArrayList<Double> spectrum;
+
+	private long frameIdx;
+
+	public PrioritySpectrum( ArrayList<Double> spectrum, long frameIdx ) {
+		this.spectrum = spectrum;
+		this.frameIdx = frameIdx;
+	}
+
+	public ArrayList<Double> getSpectrum() {
+		return spectrum;
+	}
+
+	public long getFrameIdx() {
+		return frameIdx;
+	}
+
+	@Override
+	public int compareTo( Object other ) {
+		if( other instanceof PrioritySpectrum ) {
+			long otherFrameIdx = ((PrioritySpectrum)other).frameIdx;
+			return (int)(this.frameIdx - otherFrameIdx);
+		}
+		throw new UnsupportedOperationException( "Unimplemented method 'compareTo'" );
+	}
+}
+
+record EnrichedImage(BufferedImage internalImage, long frameIdx) implements Comparable {
+
+	@Override
+	public int compareTo( Object other ) {
+		if( other instanceof EnrichedImage ) {
+			long otherFrameIdx = ((EnrichedImage)other).frameIdx;
+			return (int)(this.frameIdx - otherFrameIdx);
+		}
+		throw new UnsupportedOperationException( "Unimplemented method 'compareTo'" );
+	}
 }
 
 class DSP {
@@ -35,19 +77,24 @@ class DSP {
 
 	private double[] spectrum = null;
 
-	public void process( int[] samples ) {
+	// Skips the fft
+	public void processLight( int[] samples ) {
 		for( int sample : samples ) {
 			if( Math.abs( sample ) > peakLoudness ) {
 				peakLoudness = Math.abs( sample );
 			}
 		}
 
-		//Calculate RMS
+		// Calculate RMS
 		double sum = 0;
 		for( int sample : samples ) {
 			sum += ((double)sample * (double)sample);
 		}
 		rms = Math.sqrt( sum / samples.length );
+	}
+
+	public void processFull( int[] samples ) {
+		processLight( samples );
 
 		// Calculate FFT
 		double[] real = new double[ samples.length ];
@@ -88,7 +135,7 @@ class DSP {
 			spectrum[ i ] = spectrum[ i ] - 0.85 * max;
 		}
 
-		//Remove negative values
+		// Remove negative values
 		for( int i = 0; i < spectrum.length; i++ ) {
 			if( spectrum[ i ] < 0 ) {
 				spectrum[ i ] = 0;
@@ -131,135 +178,8 @@ class DSP {
 
 	public void reset() {
 		peakLoudness = 0;
+		spectrum = null;
 	}
-
-}
-
-class SpinningSquare implements FrameProducer {
-
-	static final int VWIDTH = 1920;
-
-	static final int VHEIGHT = 1080;
-
-	private long frameCounter = 0;
-
-	private MusicFile musicFile = null;
-
-	private BufferedImage art = null;
-
-	private static final int RMS_QUEUE_SIZE = 5;
-
-	private DSP dspLeft = new DSP();
-
-	private double progress = 0.0;
-
-	private Queue<Double> rmsQueue = new ArrayDeque<>( RMS_QUEUE_SIZE );
-
-	private Queue<ArrayList<Double>> spectrumsQueue = null;
-
-	public SpinningSquare( MusicFile musicFile ) {
-
-		this.musicFile = musicFile;
-		try {
-			art = ImageIO.read( Objects.requireNonNull( this.getClass().getResourceAsStream( "/hs-logo.png" ) ) );
-		} catch( IOException e ) {
-			throw new RuntimeException( e );
-		}
-		for( int i = 0; i < RMS_QUEUE_SIZE; i++ ) {
-			rmsQueue.add( 0.0 );
-		}
-		progress = 0.0;
-	}
-
-	public double getProgress() {
-		return progress;
-	}
-
-	@Override
-	public List<Stream> produceStreams() {
-		return Collections.singletonList( new Stream().setType( Stream.Type.VIDEO ).setTimebase( 60L ).setWidth( VWIDTH ).setHeight( VHEIGHT ) );
-	}
-
-	@Override
-	public Frame produce() {
-		int[] samplesLeft;
-		int audioBufferSize = (int)(musicFile.getSampleRate() / 60);
-		int delta = Math.min( audioBufferSize, musicFile.getSamplesLeft().size() - (int)frameCounter * audioBufferSize );
-		progress = frameCounter * audioBufferSize / (double)musicFile.getSamplesLeft().size();
-		if( delta <= 0 ) {
-			return null;
-		}
-
-		// Initial setup
-		BufferedImage image = new BufferedImage( VWIDTH, VHEIGHT, BufferedImage.TYPE_3BYTE_BGR );
-		Graphics2D graphics = image.createGraphics();
-		samplesLeft = musicFile.getSamplesLeft().subList( (int)frameCounter * audioBufferSize, (int)frameCounter * audioBufferSize + delta ).stream().mapToInt( i -> i ).toArray();
-		dspLeft.process( samplesLeft );
-		graphics.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
-		graphics.setPaint( new Color( 0, 0, 0 ) );
-		graphics.fillRect( 0, 0, VWIDTH, VHEIGHT );
-
-		//Avg spectrum
-		double[] newSpectrum = dspLeft.getSpectrum();
-		if( spectrumsQueue == null ) {
-			spectrumsQueue = new ArrayDeque<>( RMS_QUEUE_SIZE );
-			for( int i = 0; i < RMS_QUEUE_SIZE; i++ ) {
-				spectrumsQueue.add( new ArrayList<>( Arrays.asList( Arrays.stream( new double[ newSpectrum.length ] ).boxed().toArray( Double[]::new ) ) ) );
-			}
-		}
-		spectrumsQueue.remove();
-		spectrumsQueue.add( new ArrayList<>( Arrays.asList( Arrays.stream( newSpectrum ).boxed().toArray( Double[]::new ) ) ) );
-		ArrayList<Double> spectrum = new ArrayList<>( newSpectrum.length );
-		for( int i = 0; i < newSpectrum.length; i++ ) {
-			double sum = 0;
-			for( ArrayList<Double> nextSpectrum : spectrumsQueue ) {
-				sum += nextSpectrum.get( i ) != null ? nextSpectrum.get( i ) : 0;
-			}
-			spectrum.add( sum / spectrumsQueue.size() );
-		}
-
-		//Render spectrum
-		int barMaxHeight = VHEIGHT / 2;
-		int barCount = spectrum.size();
-		for( int i = 0; i < barCount; i++ ) {
-			double x = Math.log10( i ) / Math.log10( barCount ) * VWIDTH;
-			double barWidth = Math.log10( i + 1 ) / Math.log10( barCount ) * VWIDTH - x;
-			barWidth = Math.max( 1, barWidth );
-			int barHeight = (int)(spectrum.get( i ) * barMaxHeight);
-			graphics.setPaint( ColorUtil.colorWithIntensity( new Color( 239, 137, 222 ), spectrum.get( i ) ) );
-			graphics.fillRect( (int)x, VHEIGHT / 2 - barHeight / 2, (int)barWidth, barHeight );
-		}
-
-		// Generate RMS queue
-		double intensity = dspLeft.getRMSLoudness();
-		double avg = rmsQueue.stream().mapToDouble( Double::doubleValue ).average().orElse( 0.0 );
-		rmsQueue.remove();
-		rmsQueue.add( intensity );
-
-		int smallest = Math.min( VWIDTH, VHEIGHT );
-		int size = smallest / 10 + (int)(avg * smallest);
-		AffineTransform transform = graphics.getTransform();
-		Rectangle2D rect = new Rectangle2D.Double( ((double)VWIDTH / 2) - size / 2.0f, ((double)VHEIGHT / 2) - size / 2.0f, size, size );
-		double rotateX = rect.getX() + rect.getWidth() / 2;
-		double rotateY = rect.getY() + rect.getHeight() / 2;
-		//		graphics.translate( 100 * avg, 100 * avg );
-		//		graphics.rotate( Math.toRadians( frameCounter ), rotateX, rotateY );
-		//		graphics.setPaint( new Color( 0, 0, 0, 50 ) );
-		//		graphics.fillRect( rect.getBounds().x, rect.getBounds().y, rect.getBounds().width, rect.getBounds().height );
-		//		graphics.setTransform( transform );
-		graphics.rotate( Math.toRadians( frameCounter ), rotateX, rotateY );
-		graphics.setPaint( ColorUtil.colorWithIntensity( new Color( 127, 255, 197, 150 ), avg ) );
-		graphics.fillRect( rect.getBounds().x, rect.getBounds().y, rect.getBounds().width, rect.getBounds().height );
-		graphics.setTransform( transform );
-		graphics.drawImage( art, rect.getBounds().x, rect.getBounds().y, rect.getBounds().width, rect.getBounds().height, null );
-
-		long pts = frameCounter; // Frame PTS in Stream Timebase
-		Frame videoFrame = Frame.createVideoFrame( 0, pts, image );
-		frameCounter++;
-
-		return videoFrame;
-	}
-
 }
 
 class MusicFile {
@@ -274,6 +194,8 @@ class MusicFile {
 
 	private Long sampleRate = 0L;
 
+	private int numSamples;
+
 	public MusicFile( File file ) {
 		this.file = file;
 	}
@@ -285,6 +207,7 @@ class MusicFile {
 
 		samplesLeft = new Vector<>();
 		samplesRight = new Vector<>();
+		samplesAvg = new Vector<>();
 
 		FFmpeg.atPath().addInput( UrlInput.fromPath( file.toPath() ) ).addOutput( FrameOutput.withConsumer( new FrameConsumer() {
 
@@ -295,10 +218,10 @@ class MusicFile {
 
 			@Override
 			public void consume( Frame frame ) {
-				//End of stream
+				// End of stream
 				if( frame == null ) return;
 
-				//Add samples to the sample buffers
+				// Add samples to the sample buffers
 				for( int index = 0; index < frame.getSamples().length; index++ ) {
 					if( index % 2 == 0 ) {
 						samplesRight.add( frame.getSamples()[ index ] );
@@ -308,6 +231,16 @@ class MusicFile {
 				}
 			}
 		} ).disableStream( StreamType.VIDEO ).disableStream( StreamType.DATA ).disableStream( StreamType.SUBTITLE ) ).execute();
+
+		// Simple mean averaging of the left and right channels
+		samplesAvg.setSize( samplesLeft.size() );
+		IntStream.range( 0, samplesAvg.size() ).forEach( ( index ) -> {
+			samplesAvg.set( index, (samplesLeft.get( index ) + samplesRight.get( index ) / 2) );
+		} );
+
+		numSamples = samplesAvg.size();
+
+		System.out.println( "Music File " + file.getName() + " has " + numSamples + " samples" );
 	}
 
 	public Vector<Integer> getSamplesLeft() {
@@ -318,51 +251,266 @@ class MusicFile {
 		return samplesRight;
 	}
 
+	public Vector<Integer> getSamplesAvg() {
+		return samplesAvg;
+	}
+
+	public int getNumSamples() {
+		return numSamples;
+	}
+
 	public Long getSampleRate() {
 		return sampleRate;
 	}
+}
 
+class Renderer {
+
+	public BufferedImage art;
+
+	public static final int AVG_QUEUE_SIZE = 5;
+
+	private ThreadPoolExecutor renderPool;
+
+	private MusicFile music;
+
+	private int frameWidth;
+
+	private int frameHeight;
+
+	private Queue<Double> rmsQueue = new ArrayBlockingQueue<>( AVG_QUEUE_SIZE );
+
+	private Queue<ArrayList<Double>> spectrumsQueue = null;
+
+	private PriorityBlockingQueue<PrioritySpectrum> spectralQueue;
+
+	private Vector<String> nameList;
+
+	Renderer(
+		ThreadPoolExecutor renderPool, Vector<String> nameList, PriorityBlockingQueue<PrioritySpectrum> spectralQueue, MusicFile music, int frameWidth, int frameHeight
+	) {
+		this.renderPool = renderPool;
+		this.nameList = nameList;
+		this.music = music;
+		this.frameWidth = frameWidth;
+		this.frameHeight = frameHeight;
+		this.spectralQueue = spectralQueue;
+		try {
+			art = ImageIO.read( Objects.requireNonNull( this.getClass().getResourceAsStream( "/hs-logo.png" ) ) );
+		} catch( IOException e ) {
+			throw new RuntimeException( e );
+		}
+
+		for( int i = 0; i < AVG_QUEUE_SIZE; i++ ) {
+			rmsQueue.add( 0.0 );
+		}
+	}
+
+	private static EnrichedImage renderImage(
+		double loudness, ArrayList<Double> spectrum, int frameWidth, int frameHeight, long frameIdx, BufferedImage art
+	) {
+		BufferedImage image = new BufferedImage( frameWidth, frameHeight, BufferedImage.TYPE_3BYTE_BGR );
+		Graphics2D graphics = image.createGraphics();
+		graphics.setColor( Color.BLACK );
+		graphics.fillRect( 0, 0, frameWidth, frameHeight );
+		graphics.setColor( Color.WHITE );
+		graphics.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
+
+		Font font = new Font( "Serif", Font.PLAIN, 32 );
+		graphics.setFont( font );
+		graphics.drawString( "Frame: " + frameIdx, 10, 20 );
+
+		//Render spectrum
+		int barMaxHeight = frameHeight / 2;
+		int barCount = spectrum.size();
+		for( int i = 0; i < barCount; i++ ) {
+			double x = Math.log10( i ) / Math.log10( barCount ) * frameWidth;
+			double barWidth = Math.log10( i + 1 ) / Math.log10( barCount ) * frameWidth - x;
+			barWidth = Math.max( 1, barWidth );
+			int barHeight = (int)(spectrum.get( i ) * barMaxHeight);
+			graphics.setPaint( ColorUtil.colorWithIntensity( new Color( 140, 239, 137 ), spectrum.get( i ) ) );
+			graphics.fillRect( (int)x, frameHeight / 2 - barHeight / 2, (int)barWidth, barHeight );
+		}
+
+		int smallest = Math.min( frameWidth, frameHeight );
+		int size = smallest / 10 + (int)(loudness * smallest);
+		AffineTransform transform = graphics.getTransform();
+		Rectangle2D rect = new Rectangle2D.Double( ((double)frameWidth / 2) - size / 2.0f, ((double)frameHeight / 2) - size / 2.0f, size, size );
+		double rotateX = rect.getX() + rect.getWidth() / 2;
+		double rotateY = rect.getY() + rect.getHeight() / 2;
+		graphics.rotate( Math.toRadians( frameIdx ), rotateX, rotateY );
+		graphics.setPaint( ColorUtil.colorWithIntensity( new Color( 127, 255, 197, 150 ), loudness ) );
+		graphics.fillRect( rect.getBounds().x, rect.getBounds().y, rect.getBounds().width, rect.getBounds().height );
+		graphics.setTransform( transform );
+		graphics.drawImage( art, rect.getBounds().x, rect.getBounds().y, rect.getBounds().width, rect.getBounds().height, null );
+
+		return new EnrichedImage( image, frameIdx );
+	}
+
+	public void run() {
+		final int audioBufferSize = (int)(music.getSampleRate() / 60);
+		final int numFrames = spectralQueue.size();
+		Vector<Future<?>> futures = new Vector<>();
+		for( int counter = 0; counter < numFrames; counter++ ) {
+			DSP dsp = new DSP();
+			int delta = Math.min( audioBufferSize, music.getSamplesAvg().size() - counter * audioBufferSize );
+			if( delta <= 0 ) {
+				return;
+			}
+			int[] samplesAvg = music.getSamplesAvg().subList( (int)counter * audioBufferSize, (int)counter * audioBufferSize + delta ).stream().mapToInt( i -> i ).toArray();
+			dsp.processLight( samplesAvg );
+
+			// Smooth RMS
+			double intensity = dsp.getRMSLoudness();
+			double avg = rmsQueue.stream().mapToDouble( Double::doubleValue ).average().orElse( 0.0 );
+			rmsQueue.remove();
+			rmsQueue.offer( intensity );
+
+			// Smooth spectrum
+			double[] newSpectrum = new double[ 0 ];
+			try {
+				newSpectrum = spectralQueue.take().getSpectrum().stream().mapToDouble( i -> i ).toArray();
+			} catch( InterruptedException e ) {
+				throw new RuntimeException( e );
+			}
+			if( spectrumsQueue == null ) {
+				spectrumsQueue = new ArrayBlockingQueue<>( AVG_QUEUE_SIZE );
+				for( int i = 0; i < AVG_QUEUE_SIZE; i++ ) {
+					spectrumsQueue.offer( new ArrayList<>( Arrays.asList( Arrays.stream( new double[ newSpectrum.length ] ).boxed().toArray( Double[]::new ) ) ) );
+				}
+			}
+			spectrumsQueue.remove();
+			spectrumsQueue.offer( new ArrayList<>( Arrays.asList( Arrays.stream( newSpectrum ).boxed().toArray( Double[]::new ) ) ) );
+			ArrayList<Double> spectrumAvg = new ArrayList<>( newSpectrum.length );
+			for( int bucket = 0; bucket < newSpectrum.length; bucket++ ) {
+				double sum = 0;
+				for( ArrayList<Double> nextSpectrum : spectrumsQueue ) {
+					sum += nextSpectrum.get( bucket ) != null ? nextSpectrum.get( bucket ) : 0;
+				}
+				spectrumAvg.add( sum / spectrumsQueue.size() );
+			}
+
+			int index = counter;
+			Future<?> future = this.renderPool.submit( () -> {
+				try {
+					ImageIO.write( renderImage( avg, new ArrayList<>( spectrumAvg ), frameWidth, frameHeight, index, art ).internalImage(), "jpg", new File( "output" + index + ".jpg" ) );
+					nameList.add( "output" + index + ".jpg" );
+				} catch( IOException e ) {
+					throw new RuntimeException( e );
+				}
+			} );
+			futures.add( future );
+		}
+		for( Future<?> future : futures ) {
+			try {
+				future.get();
+			} catch( InterruptedException | ExecutionException e ) {
+				e.printStackTrace();
+			}
+		}
+	}
 }
 
 public class Main {
 
+	private static final int threadCount = Runtime.getRuntime().availableProcessors();
+
 	public static void main( String[] args ) {
-		Timer timer = new Timer();
-		File input = new File( "DeadFriend.wav" );
-		if( !input.exists() ) {
-			throw new RuntimeException( "Input file not found: " + input.getAbsolutePath() );
-		}
-		MusicFile musicFile = new MusicFile( input );
-		musicFile.load();
+		System.out.println( "Starting HyperSynestheisa multi-threaded tech demo" );
+		System.out.println( "Discovered " + threadCount + " threads" );
+
+		int width = 1920;
+		int height = 1080;
 
 		File out = new File( "output.mp4" );
 		if( out.exists() ) {
-			out.delete();
-		}
-		SpinningSquare producer = new SpinningSquare( musicFile );
-
-		timer.scheduleAtFixedRate( new TimerTask() {
-
-			@Override
-			public void run() {
-				DecimalFormat df = new DecimalFormat( "##.##%" );
-				double percent = producer.getProgress();
-				String formattedPercent = df.format( percent );
-				System.out.println( "Progress: " + formattedPercent );
-				//				ui.setProgress(formattedPercent);
+			boolean result = out.delete();
+			if( !result ) {
+				throw new RuntimeException( "Failed to delete output file" );
 			}
-		}, 0, 5 * 1000 );
+		}
+
+		Vector<String> fileNameList = new Vector<>();
+
+		File inputFile = new File( "./DemoTrack.wav" );
+		MusicFile music = new MusicFile( inputFile );
+		music.load();
+		ThreadPoolExecutor pool = (ThreadPoolExecutor)Executors.newFixedThreadPool( threadCount );
+		System.out.println( "Compute pool size: " + pool.getCorePoolSize() );
+
+		// pre calc FFTs multi-threaded
+		System.out.println( "Pre-calculating FFTs" );
+		PriorityBlockingQueue<PrioritySpectrum> fftQueue = new PriorityBlockingQueue<>( (int)(music.getSampleRate() / 60) );
+		DecimalFormat df = new DecimalFormat( "##.##%" );
+		ArrayList<Future<?>> futures = new ArrayList<>();
+		int numFFTs = (int)(music.getNumSamples() / (music.getSampleRate() / 60.0));
+		System.out.println( "Number of FFT tasks: " + numFFTs );
+		for( int frameIdx = 0; frameIdx <= numFFTs; frameIdx++ ) {
+			Integer index = frameIdx;
+			int audioBufferSize = (int)(music.getSampleRate() / 60);
+			int delta = Math.min( audioBufferSize, music.getSamplesAvg().size() - frameIdx * audioBufferSize );
+			Future<?> result = pool.submit( () -> {
+				int[] samplesAvg = music.getSamplesAvg().subList( index * audioBufferSize, index * audioBufferSize + delta ).stream().mapToInt( i -> i ).toArray();
+				DSP dsp = new DSP();
+				dsp.processFull( samplesAvg );
+				fftQueue.offer( new PrioritySpectrum( new ArrayList<>( Arrays.asList( Arrays.stream( dsp.getSpectrum() ).boxed().toArray( Double[]::new ) ) ), index ) );
+			} );
+			futures.add( result );
+		}
+
+		System.out.println( "FFT Tasks submitted, waiting for completion" );
+
+		for( Future<?> future : futures ) {
+			try {
+				future.get();
+			} catch( InterruptedException | ExecutionException e ) {
+				e.printStackTrace();
+			}
+		}
+		System.out.println( "Done pre-calculating FFTs, waiting for threads to finish" );
+
+		System.out.println( "FFT Queue size: " + fftQueue.size() );
+
+		System.out.println( "Triggering render" );
+		Renderer renderer = new Renderer( pool, fileNameList, fftQueue, music, width, height );
 
 		long initialTime = Clock.systemUTC().millis();
-		FFmpeg.atPath().addInput( UrlInput.fromPath( input.toPath() ) ).addInput( FrameInput.withProducer( producer ) ).addOutput( UrlOutput.toUrl( "output.mp4" ) ).addArguments( "-crf", "15" ).execute();
+
+		// Render
+		renderer.run();
+
+		System.out.println( "Rendering complete" );
+		System.out.println( "Rendered " + fileNameList.size() + " frames" );
+		System.out.println( "Encoding video" );
+
+		// Encode video
+		FFmpeg
+			.atPath()
+			.addInput( UrlInput.fromPath( inputFile.toPath() ) )
+			.addOutput( UrlOutput.toUrl( "output.mp4" ) )
+			.addArguments( "-framerate", "60" )
+			.addArguments( "-i", "output%d.jpg" )
+			.addArguments( "-crf", "15" )
+			.execute();
 
 		long finalTime = Clock.systemUTC().millis();
 		long deltaTime = finalTime - initialTime;
-
 		Duration duration = Duration.ofMillis( deltaTime );
-		System.out.println( "Encoding took: " + duration.toMinutesPart() + " minutes and " + duration.toSecondsPart() + " seconds" );
-		timer.cancel();
-		timer.purge();
-	}
 
+		long musicSeconds = music.getNumSamples() / music.getSampleRate();
+		System.out.println( "Input file duration: " + musicSeconds + " seconds" );
+		System.out.println( "Target video resolution: " + width + "x" + height );
+		System.out.println( "Render and encoding took: " + duration.toMinutesPart() + " minutes and " + duration.toSecondsPart() + " seconds" );
+		System.out.println( "Render and encoding was " + df.format( (double)musicSeconds / (double)duration.getSeconds() ) + " of real time" );
+
+		// Clean up
+		for( String fileName : fileNameList ) {
+			File file = new File( fileName );
+			if( file.exists() ) {
+				file.delete();
+			}
+		}
+
+		pool.shutdown();
+	}
 }
