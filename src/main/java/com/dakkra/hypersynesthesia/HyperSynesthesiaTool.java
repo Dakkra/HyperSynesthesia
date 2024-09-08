@@ -4,20 +4,12 @@ import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.asset.Asset;
 import com.avereon.xenon.task.Task;
 import com.avereon.xenon.tool.guide.GuidedTool;
-import com.dakkra.hypersynesthesia.dsp.PeakLoudness;
-import com.github.kokorin.jaffree.StreamType;
-import com.github.kokorin.jaffree.ffmpeg.*;
-import javafx.application.Platform;
-import javafx.embed.swing.SwingFXUtils;
+import com.dakkra.hypersynesthesia.ffmpeg.MusicFile;
+import com.dakkra.hypersynesthesia.ffmpeg.ProjectProcessor;
 import javafx.scene.Scene;
-import javafx.scene.SnapshotParameters;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
-import javafx.scene.image.PixelBuffer;
-import javafx.scene.image.PixelFormat;
-import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
@@ -28,28 +20,19 @@ import javafx.stage.FileChooser;
 import lombok.CustomLog;
 
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-import java.awt.image.DataBufferInt;
 import java.io.File;
-import java.io.IOException;
-import java.nio.IntBuffer;
-import java.nio.file.Files;
-import java.util.Collections;
-import java.util.List;
-import java.util.Vector;
+import java.nio.file.Path;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 @CustomLog
 public class HyperSynesthesiaTool extends GuidedTool {
 
-	private static final BufferedImage POISON_PILL = new BufferedImage( 1, 1, BufferedImage.TYPE_INT_RGB );
+	private static final double MIN_SCALE = 0.05;
 
-	private final double MIN_SCALE = 0.05;
+	private static final double MAX_SCALE = 5.0;
 
-	private final double MAX_SCALE = 5.0;
+	private final ProjectProcessor projectProcessor;
 
 	private final RenderPane displayPane;
 
@@ -64,26 +47,30 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 	private double lastY;
 
-	private int dimX = 1920;
+	private int width = 1920;
 
-	private int dimY = 1080;
+	private int height = 1080;
 
-	private File inputAudioFile = null;
+	private MusicFile music;
 
-	Button importButton;
+	private Button importButton;
 
-	Button exportButton;
+	private Button exportButton;
 
-	Long musicDurationMS = null;
-
-	private Vector<Integer> samples_left;
-
-	private Vector<Integer> samples_right;
-
-	private long samplerate;
+	//	private final Object frameBufferMutex = new Object();
+	//
+	//	Long musicDurationMS = null;
+	//
+	//	private Vector<Integer> samples_left;
+	//
+	//	private Vector<Integer> samples_right;
+	//
+	//	private long samplerate;
 
 	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
 		super( product, asset );
+
+		this.projectProcessor = new ProjectProcessor();
 
 		frameBuffer = new LinkedBlockingQueue<>( 100 );
 
@@ -91,9 +78,9 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		renderPane = new RenderPane();
 		Label name = new Label( "HyperSynesthesia" );
 		name.setStyle( "-fx-font-size: 100px" + "; -fx-font-weight: bold" + "; -fx-text-fill: #000000; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 10, 10);" );
-		renderPane.setMinSize( dimX, dimY );
-		renderPane.setPrefSize( dimX, dimY );
-		renderPane.setMaxSize( dimX, dimY );
+		renderPane.setMinSize( width, height );
+		renderPane.setPrefSize( width, height );
+		renderPane.setMaxSize( width, height );
 		renderPane.setScaleX( 1.0 );
 		renderPane.setScaleY( 1.0 );
 		renderScene = new Scene( renderPane );
@@ -106,8 +93,8 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		displayPane.getChildren().add( name );
 
 		displayPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius 40% , #ffebcd, #008080);" );
-		displayPane.setMaxSize( dimX, dimY );
-		displayPane.setMinSize( dimX, dimY );
+		displayPane.setMaxSize( width, height );
+		displayPane.setMinSize( width, height );
 
 		double DEFAULT_SCALE = 0.5;
 		displayPane.setScaleX( DEFAULT_SCALE );
@@ -122,11 +109,14 @@ public class HyperSynesthesiaTool extends GuidedTool {
 
 		HBox fileButtons = new HBox();
 
+		// NOTE The process is split into two steps
+		//  1. Load and analyze the music file
+		//  2. Generate the video file
 		importButton = new Button( "Import" );
-		importButton.setOnAction( ( event ) -> loadMusicFile() );
+		importButton.setOnAction( ( event ) -> requestInputFile() );
 
 		exportButton = new Button( "Export" );
-		exportButton.setOnAction( ( event ) -> exportVideo() );
+		exportButton.setOnAction( ( event ) -> requestOutputFile() );
 		exportButton.setDisable( true );
 
 		fileButtons.getChildren().addAll( importButton, exportButton );
@@ -191,255 +181,31 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		return value;
 	}
 
-	private FrameProducer fxFrameProducer() {
-		return new FrameProducer() {
-
-			private long frameCounter = 0;
-
-			@Override
-			public List<Stream> produceStreams() {
-				return Collections.singletonList( new Stream().setType( Stream.Type.VIDEO ).setTimebase( 60L ).setWidth( dimX ).setHeight( dimY ) );
-			}
-
-			@Override
-			public Frame produce() {
-				long pts = frameCounter; // Frame PTS in Stream Timebase
-				try {
-					synchronized( frameBufferMutex ) {
-						BufferedImage image = frameBuffer.take();
-						if( image == POISON_PILL ) return null;
-
-						Frame videoFrame = Frame.createVideoFrame( 0, pts, image );
-						frameCounter++;
-
-						// Notify that there is room on the queue
-						frameBufferMutex.notifyAll();
-
-						return videoFrame;
-					}
-				} catch( InterruptedException exception ) {
-					return null;
-				}
-			}
-		};
-	}
-
-	private final Object frameBufferMutex = new Object();
-
-	private class FrameRenderer extends Task<Void> {
-
-		private long frameCounter = 0;
-
-		public Void call() {
-			final long millisPerFrame = 1000 / 60;
-			final long totalFrames = musicDurationMS / millisPerFrame;
-
-			long startTime = System.currentTimeMillis();
-			try {
-				while( frameCounter < totalFrames ) {
-					// Wait for buffer capacity
-					synchronized( frameBufferMutex ) {
-						while( frameBuffer.remainingCapacity() < 1 ) {
-							try {
-								frameBufferMutex.wait( 100 );
-							} catch( InterruptedException e ) {
-								break;
-							}
-						}
-					}
-
-					// Render a frame and put it in the frame buffer
-					final long finalFrameCounter = frameCounter;
-					Platform.runLater( () -> {
-						long frameStart = System.nanoTime();
-						try {
-							frameBuffer.offer( renderBufferedImaged( finalFrameCounter ), 10, TimeUnit.SECONDS );
-						} catch( InterruptedException exception ) {
-							// Stop rendering when interrupted
-						} finally {
-							long frameEnd = System.nanoTime();
-							log.atConfig().log( "Frame " + finalFrameCounter + " / " + totalFrames + " rendered in " + (frameEnd - frameStart) + "ns" );
-						}
-					} );
-
-					frameCounter++;
-				}
-			} finally {
-				Platform.runLater( () -> {
-					try {
-						frameBuffer.offer( POISON_PILL, 10, TimeUnit.SECONDS );
-					} catch( InterruptedException e ) {
-						// Intentionally ignore exception
-					}
-				} );
-			}
-
-			System.out.println( "Rendering time = " + (System.currentTimeMillis() - startTime) + "ms" );
-
-			return null;
-		}
-
-	}
-
-	private final WritableImage wiBuffer = createFxWritableImageBuffer( dimX, dimY );
-
-	private BufferedImage renderBufferedImaged( long frameCounter ) {
-		final long sampleIndex = frameCounter * (samplerate / 60);
-		final long samplesPerFrame = samplerate / 60;
-		final long samplesThisFrame = Math.min( samplesPerFrame, samples_left.size() - sampleIndex );
-		double peak = 0.0;
-
-		if( samplesThisFrame > 0 ) {
-
-			// Get average samples between left and right channels for this frame
-			final int[] samples = new int[ (int)samplesThisFrame ];
-			for( int index = 0; index < samplesThisFrame; index++ ) {
-				samples[ index ] = (samples_left.get( (int)(sampleIndex + index) ) + samples_right.get( (int)(sampleIndex + index) )) / 2;
-			}
-
-			// Get peak value for this frame
-			PeakLoudness peakLoudness = new PeakLoudness();
-			peakLoudness.process( samples );
-			peak = peakLoudness.getPeakLoudness();
-		}
-		System.out.println( "Peak for frame: " + frameCounter + " = " + peak );
-
-		renderPane.setStyle( "-fx-background-color: radial-gradient(center 50% 50% , radius " + peak * 50 + "% , #ffebcd, -fx-accent);" );
-		renderPane.setScaleX( 1.0 );
-		renderPane.setScaleY( 1.0 );
-		renderPane.getChildren().add( new Label( "HyperSynesthesia" ) );
-
-		renderPane.snapshot( new SnapshotParameters(), wiBuffer );
-		BufferedImage base = SwingFXUtils.fromFXImage( wiBuffer, null );
-
-		BufferedImage buffer = new BufferedImage( dimX, dimY, BufferedImage.TYPE_3BYTE_BGR );
-		convert( base, buffer );
-		buffer.getGraphics().dispose();
-		base.getGraphics().dispose();
-
-		return buffer;
-	}
-
-	private WritableImage createFxWritableImageBuffer( int width, int height ) {
-		PixelFormat<IntBuffer> pixelFormat = PixelFormat.getIntArgbPreInstance();
-		IntBuffer renderPixelBuffer = IntBuffer.allocate( width * height );
-		return new WritableImage( new PixelBuffer<>( width, height, renderPixelBuffer, pixelFormat ) );
-	}
-
-	private void convert( BufferedImage sourceImage, BufferedImage targetImage ) {
-		int width = targetImage.getWidth();
-		int height = targetImage.getHeight();
-		int pixelCount = width * height;
-
-		// Get the source and target pixel buffers
-		int[] source = ((DataBufferInt)sourceImage.getRaster().getDataBuffer()).getData();
-		byte[] target = ((DataBufferByte)targetImage.getRaster().getDataBuffer()).getData();
-
-		// Convert from ArgbPre to Bgr
-		for( int index = 0; index < pixelCount; index++ ) {
-			int pixel = preToNonPre( source[ index ] );
-			target[ 3 * index + 2 ] = (byte)((pixel >> 16) & 0xff);
-			target[ 3 * index + 1 ] = (byte)((pixel >> 8) & 0xff);
-			target[ 3 * index ] = (byte)((pixel) & 0xff);
-		}
-	}
-
-	static int preToNonPre( int pre ) {
-		int a = pre >>> 24;
-		if( a == 0xff || a == 0x00 ) return pre;
-		int r = (pre >> 16) & 0xff;
-		int g = (pre >> 8) & 0xff;
-		int b = (pre) & 0xff;
-		int halfa = a >> 1;
-		r = (r >= a) ? 0xff : (r * 0xff + halfa) / a;
-		g = (g >= a) ? 0xff : (g * 0xff + halfa) / a;
-		b = (b >= a) ? 0xff : (b * 0xff + halfa) / a;
-		return (a << 24) | (r << 16) | (g << 8) | b;
-	}
-
-	private void loadMusicFile() {
+	private void requestInputFile() {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle( "Open Music File" );
 		fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Music" ) );
+		Path inputFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() ).toPath();
 
-		inputAudioFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() );
-
-		exportButton.setDisable( inputAudioFile == null );
-
-		AtomicLong duration = new AtomicLong( 0 );
-
-		FFmpeg.atPath().addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( new NullOutput() ).setProgressListener( progress -> duration.set( progress.getTimeMillis() ) ).execute();
-
-		musicDurationMS = duration.get();
-		samples_left = new Vector<>();
-		samples_right = new Vector<>();
-		FFmpeg.atPath().addInput( UrlInput.fromPath( inputAudioFile.toPath() ) ).addOutput( FrameOutput.withConsumer( new FrameConsumer() {
-
-			@Override
-			public void consumeStreams( List<Stream> streams ) {
-				samplerate = streams.get( 0 ).getSampleRate();
-			}
-
-			@Override
-			public void consume( Frame frame ) {
-				//End of stream
-				if( frame == null ) return;
-
-				//Add samples to the sample buffers
-				for( int index = 0; index < frame.getSamples().length; index++ ) {
-					if( index % 2 == 0 ) {
-						samples_left.add( frame.getSamples()[ index ] );
-					} else {
-						samples_right.add( frame.getSamples()[ index ] );
-					}
-				}
-			}
-		} ).disableStream( StreamType.VIDEO ).disableStream( StreamType.DATA ).disableStream( StreamType.SUBTITLE ) ).execute();
-
-		System.out.println( "Duration = " + musicDurationMS );
-		System.out.println( "Loaded n-left samples: " + samples_left.size() );
-		System.out.println( "Loaded n-right samples: " + samples_right.size() );
-		System.out.println( "At sample rate: " + samplerate );
-		System.out.println( "Samples per frame: " + (samplerate / 60) );
+		Task<Void> loadTask = Task.of( "Load Music", () -> {
+			music = projectProcessor.loadMusicFile( inputFile );
+			// TODO Update actions
+			exportButton.setDisable( false );
+			return null;
+		} );
+		getProgram().getTaskManager().submit( loadTask );
 	}
 
-	private void exportVideo() {
-		if( inputAudioFile == null ) {
-			Alert alert = new Alert( Alert.AlertType.ERROR );
-			alert.setTitle( "Missing input file" );
-			alert.setHeaderText( "No input file selected" );
-			alert.setContentText( "Please select an input file before exporting" );
-			alert.show();
-			return;
-		}
-
+	private void requestOutputFile() {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle( "Export Video" );
 		fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Videos" ) );
+		Path outputFile = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() ).toPath();
 
-		File file = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
+		Task<?> renderTask = Task.of( "Render Video", () -> projectProcessor.renderVideoFile( music, width, height, outputFile ) );
+		getProgram().getTaskManager().submit( renderTask );
 
-		if( file == null ) return;
-
-		try {
-			if( Files.exists( file.toPath() ) ) Files.delete( file.toPath() );
-		} catch( IOException exception ) {
-			log.atWarn().log( "Unable to overwrite file " + file, exception );
-			return;
-		}
-
-		getProgram().getTaskManager().submit( new FrameRenderer() );
-
-		if( inputAudioFile != null ) {
-			inputAudioFile = new File( inputAudioFile.getPath() );
-			FFmpeg
-				.atPath()
-				.addInput( FrameInput.withProducer( fxFrameProducer() ) )
-				.addInput( UrlInput.fromPath( inputAudioFile.toPath() ) )
-				.addOutput( UrlOutput.toPath( file.toPath() ) )
-				.addArguments( "-pix_fmt", "yuv420p" )
-				.executeAsync();
-		}
+		// TODO Update actions
 	}
 
 }
