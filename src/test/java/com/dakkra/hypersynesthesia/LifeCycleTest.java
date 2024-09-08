@@ -1,6 +1,6 @@
 package com.dakkra.hypersynesthesia;
 
-import com.avereon.xenon.ModStatus;
+import com.avereon.xenon.Module;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,12 +12,12 @@ public class LifeCycleTest extends HyperSynesthesiaTest{
 	@Test
 	void testModLfeCycle() {
 		assertThat(getProgram().getProductManager().isModEnabled( getMod() )).isTrue();
-		assertThat( getMod().getStatus() ).isEqualTo( ModStatus.STARTED );
+		assertThat( getMod().getStatus() ).isEqualTo( Module.Status.STARTED );
 
 		getProgram().getProductManager().setModEnabled( getMod().getCard(), false );
 
 		assertThat( getProgram().getProductManager().isModEnabled( getMod() ) ).isFalse();
-		assertThat( getMod().getStatus() ).isEqualTo( ModStatus.STOPPED );
+		assertThat( getMod().getStatus() ).isEqualTo( Module.Status.STOPPED );
 	}
 
 	@Test
