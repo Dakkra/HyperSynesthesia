@@ -7,11 +7,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class LifeCycleTest extends HyperSynesthesiaTest{
+public class LifeCycleTest extends HyperSynesthesiaTest {
 
 	@Test
-	void testModLfeCycle() {
-		assertThat(getProgram().getProductManager().isModEnabled( getMod() )).isTrue();
+	void testModLifeCycle() {
+		assertThat( getProgram().getProductManager().isModEnabled( getMod() ) ).isTrue();
 		assertThat( getMod().getStatus() ).isEqualTo( Module.Status.STARTED );
 
 		getProgram().getProductManager().setModEnabled( getMod().getCard(), false );
@@ -30,7 +30,7 @@ public class LifeCycleTest extends HyperSynesthesiaTest{
 		assertEquals( "HyperSynesthesia", getMod().getCard().getName() );
 	}
 
-  @Test
+	@Test
 	void testModCardArtifact() {
 		assertEquals( "hypersynesthesia", getMod().getCard().getArtifact() );
 	}
