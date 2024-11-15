@@ -10,5 +10,4 @@ module com.dakkra.hypersynthesthesia {
 
 	exports com.dakkra.hypersynesthesia to com.avereon.xenon;
 	provides Module with HyperSynesthesia;
-	opens com.dakkra.hypersynesthesia to org.testfx.junit5;
 }
