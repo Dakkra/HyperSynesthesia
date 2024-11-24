@@ -1,5 +1,9 @@
 package com.dakkra.hypersynesthesia.ffmpeg;
 
+import com.avereon.xenon.Xenon;
+import com.avereon.xenon.task.Task;
+import lombok.CustomLog;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
@@ -9,15 +13,19 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.PriorityBlockingQueue;
 
+@CustomLog
 class Renderer {
 
 	public BufferedImage art;
 
 	public static final int AVG_QUEUE_SIZE = 5;
 
-	private final ThreadPoolExecutor renderPool;
+	private final Xenon program;
 
 	private final MusicFile music;
 
@@ -33,8 +41,8 @@ class Renderer {
 
 	private Queue<ArrayList<Double>> spectrumsQueue;
 
-	Renderer( ThreadPoolExecutor renderPool, Vector<String> nameList, MusicFile music, int frameWidth, int frameHeight ) {
-		this.renderPool = renderPool;
+	Renderer( Xenon program, Vector<String> nameList, MusicFile music, int frameWidth, int frameHeight ) {
+		this.program = program;
 		this.nameList = nameList;
 		this.music = music;
 		this.frameWidth = frameWidth;
@@ -53,9 +61,7 @@ class Renderer {
 		}
 	}
 
-	private static EnrichedImage renderImage(
-		double loudness, ArrayList<Double> spectrum, int frameWidth, int frameHeight, long frameIdx, BufferedImage art
-	) {
+	private static EnrichedImage renderImage( double loudness, ArrayList<Double> spectrum, int frameWidth, int frameHeight, long frameIdx, BufferedImage art ) {
 		BufferedImage image = new BufferedImage( frameWidth, frameHeight, BufferedImage.TYPE_3BYTE_BGR );
 		Graphics2D graphics = image.createGraphics();
 		graphics.setColor( Color.BLACK );
@@ -114,7 +120,7 @@ class Renderer {
 			rmsQueue.offer( intensity );
 
 			// Smooth spectrum
-			double[] newSpectrum = new double[ 0 ];
+			double[] newSpectrum;
 			try {
 				newSpectrum = spectralQueue.take().getSpectrum().stream().mapToDouble( i -> i ).toArray();
 			} catch( InterruptedException e ) {
@@ -138,22 +144,24 @@ class Renderer {
 			}
 
 			int index = counter;
-			Future<?> future = this.renderPool.submit( () -> {
+
+			Future<?> future = program.getTaskManager().submit( Task.of( () -> {
 				try {
 					ImageIO.write( renderImage( avg, new ArrayList<>( spectrumAvg ), frameWidth, frameHeight, index, art ).internalImage(), "jpg", new File( "output" + index + ".jpg" ) );
 					nameList.add( "output" + index + ".jpg" );
 				} catch( IOException e ) {
 					throw new RuntimeException( e );
 				}
-			} );
+			} ) );
 			futures.add( future );
 		}
 		for( Future<?> future : futures ) {
 			try {
 				future.get();
 			} catch( InterruptedException | ExecutionException e ) {
-				e.printStackTrace();
+				log.atError().withCause( e ).log( "Failed to render frame" );
 			}
 		}
 	}
+
 }

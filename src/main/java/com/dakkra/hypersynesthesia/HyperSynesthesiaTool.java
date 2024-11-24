@@ -70,7 +70,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
 		super( product, asset );
 
-		this.projectProcessor = new ProjectProcessor();
+		this.projectProcessor = new ProjectProcessor( product.getProgram() );
 
 		frameBuffer = new LinkedBlockingQueue<>( 100 );
 
