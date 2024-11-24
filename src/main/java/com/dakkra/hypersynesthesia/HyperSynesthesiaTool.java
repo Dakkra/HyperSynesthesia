@@ -1,5 +1,6 @@
 package com.dakkra.hypersynesthesia;
 
+import com.avereon.xenon.Xenon;
 import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.asset.Asset;
 import com.avereon.xenon.task.Task;
@@ -67,10 +68,10 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	//
 	//	private long samplerate;
 
-	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
-		super( product, asset );
+	public HyperSynesthesiaTool( XenonProgramProduct program, Asset asset ) {
+		super( program, asset );
 
-		this.projectProcessor = new ProjectProcessor();
+		this.projectProcessor = new ProjectProcessor( (Xenon)program );
 
 		frameBuffer = new LinkedBlockingQueue<>( 100 );
 
