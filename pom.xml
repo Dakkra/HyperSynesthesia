@@ -42,7 +42,7 @@
 	<properties>
 		<!-- Version numbers updated 28 Apr 2025 -->
 		<xenon.version>1.8</xenon.version>
-		<xenos.version>0.10</xenos.version>
+		<zerra.version>0.10</zerra.version>
 		<monocle.version>21.0.2</monocle.version>
 		<cameo.version>2.10</cameo.version>
 		<curex.version>1.4.1</curex.version>
