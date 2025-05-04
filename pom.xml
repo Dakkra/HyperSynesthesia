@@ -42,7 +42,7 @@
 	<properties>
 		<!-- Version numbers updated 04 May 2025 -->
 		<xenon.version>1.9-SNAPSHOT</xenon.version>
-		<zerra.version>0.11-SNAPSHOT</zerra.version>
+		<xenos.version>0.11-SNAPSHOT</xenos.version>
 		<monocle.version>21.0.2</monocle.version>
 		<cameo.version>2.12-SNAPSHOT</cameo.version>
 		<curex.version>1.5.0</curex.version>
@@ -74,8 +74,8 @@
 
 		<dependency>
 			<groupId>com.avereon</groupId>
-			<artifactId>zerra</artifactId>
-			<version>${zerra.version}</version>
+			<artifactId>xenos</artifactId>
+			<version>${xenos.version}</version>
 			<scope>test</scope>
 		</dependency>
 
