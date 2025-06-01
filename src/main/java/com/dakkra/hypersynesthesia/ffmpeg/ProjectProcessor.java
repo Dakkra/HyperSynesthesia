@@ -1,11 +1,13 @@
 package com.dakkra.hypersynesthesia.ffmpeg;
 
+import com.avereon.xenon.Xenon;
+import com.avereon.xenon.task.Task;
 import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
 import com.github.kokorin.jaffree.ffmpeg.UrlOutput;
+import lombok.CustomLog;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.Clock;
@@ -14,55 +16,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 
+@CustomLog
 public class ProjectProcessor {
 
-	private static final int threadCount = Runtime.getRuntime().availableProcessors();
+	private static final DecimalFormat NUMBER_FORMAT = new DecimalFormat( "##.##%" );
 
-	private static final DecimalFormat df = new DecimalFormat( "##.##%" );
+	private final Xenon program;
 
-	// FIXME This can be replaced with the Xenon task pool executor
-	private final ThreadPoolExecutor pool;
-
-	public ProjectProcessor() {
-		pool = (ThreadPoolExecutor)Executors.newFixedThreadPool( threadCount );
-	}
-
-	@Deprecated
-	public static void main( String[] args ) {
-		new ProjectProcessor().run();
-	}
-
-	@Deprecated
-	private void run() {
-		System.out.println( "Starting HyperSynestheisa multi-threaded tech demo" );
-		System.out.println( "Discovered " + threadCount + " threads" );
-
-		int width = 1920;
-		int height = 1080;
-
-		Path inputFile = Path.of( "./DemoTrack.wav" );
-
-		Path outputFile = Path.of( "output.mp4" );
-		if( Files.exists( outputFile ) && !outputFile.toFile().delete() ) {
-			throw new RuntimeException( "Failed to delete output file" );
-		}
-
-		// Step one
-		MusicFile music = loadMusicFile( inputFile );
-
-		// Step two
-		renderVideoFile( music, width, height, outputFile );
-
-		System.out.println( "Done" );
+	public ProjectProcessor( Xenon program ) {
+		this.program = program;
 	}
 
 	public MusicFile loadMusicFile( Path inputFile ) {
 		MusicFile music = new MusicFile( inputFile ).load();
-		System.out.println( "Compute pool size: " + pool.getCorePoolSize() );
 
 		// pre calc FFTs multithreaded
 		System.out.println( "Pre-calculating FFTs" );
@@ -73,12 +41,12 @@ public class ProjectProcessor {
 			int index = frameIdx;
 			int audioBufferSize = (int)(music.getSampleRate() / 60);
 			int delta = Math.min( audioBufferSize, music.getSamplesAvg().size() - frameIdx * audioBufferSize );
-			Future<?> result = pool.submit( () -> {
+			Future<?> result = program.getTaskManager().submit( Task.of( () -> {
 				int[] samplesAvg = music.getSamplesAvg().subList( index * audioBufferSize, index * audioBufferSize + delta ).stream().mapToInt( i -> i ).toArray();
 				DSP dsp = new DSP();
 				dsp.processFull( samplesAvg );
 				music.getFftQueue().offer( new PrioritySpectrum( new ArrayList<>( Arrays.asList( Arrays.stream( dsp.getSpectrum() ).boxed().toArray( Double[]::new ) ) ), index ) );
-			} );
+			} ) );
 			futures.add( result );
 		}
 
@@ -88,7 +56,7 @@ public class ProjectProcessor {
 			try {
 				future.get();
 			} catch( InterruptedException | ExecutionException e ) {
-				e.printStackTrace();
+				log.atError().withCause( e ).log( "Error calculating FFT" );
 			}
 		}
 
@@ -104,7 +72,7 @@ public class ProjectProcessor {
 
 		System.out.println( "Triggering render" );
 		Vector<String> fileNameList = new Vector<>();
-		Renderer renderer = new Renderer( pool, fileNameList, music, width, height );
+		Renderer renderer = new Renderer( program, fileNameList, music, width, height );
 
 		long initialTime = Clock.systemUTC().millis();
 
@@ -133,13 +101,12 @@ public class ProjectProcessor {
 		System.out.println( "Input file duration: " + musicSeconds + " seconds" );
 		System.out.println( "Target video resolution: " + width + "x" + height );
 		System.out.println( "Render and encoding took: " + duration.toMinutesPart() + " minutes and " + duration.toSecondsPart() + " seconds" );
-		System.out.println( "Render and encoding was " + df.format( (double)musicSeconds / (double)duration.getSeconds() ) + " of real time" );
+		System.out.println( "Render and encoding was " + NUMBER_FORMAT.format( (double)musicSeconds / (double)duration.getSeconds() ) + " of real time" );
 
 		// Clean up
 		for( String fileName : fileNameList ) {
 			new File( fileName ).delete();
 		}
-
-		pool.shutdown();
 	}
+
 }
