@@ -42,7 +42,7 @@
 	<properties>
 		<!-- Version numbers updated 04 May 2025 -->
 		<xenon.version>1.9-SNAPSHOT</xenon.version>
-		<xenos.version>0.11-SNAPSHOT</xenos.version>
+		<xenos.version>1.9</xenos.version>
 		<monocle.version>21.0.2</monocle.version>
 		<cameo.version>2.12-SNAPSHOT</cameo.version>
 		<curex.version>1.5.0</curex.version>
