@@ -8,12 +8,12 @@
 	<parent>
 		<groupId>com.avereon.pom</groupId>
 		<artifactId>mod</artifactId>
-		<version>3.6.4</version>
+		<version>3.7-SNAPSHOT</version>
 	</parent>
 
 	<groupId>com.dakkra</groupId>
 	<artifactId>hypersynesthesia</artifactId>
-	<version>0.0.4-SNAPSHOT</version>
+	<version>0.0.5-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<organization>
@@ -41,10 +41,10 @@
 
 	<properties>
 		<!-- Version numbers updated 04 May 2025 -->
-		<xenon.version>1.9-SNAPSHOT</xenon.version>
-		<xenos.version>1.9</xenos.version>
+		<xenon.version>1.10-SNAPSHOT</xenon.version>
+		<xenos.version>1.10-SNAPSHOT</xenos.version>
 		<monocle.version>21.0.2</monocle.version>
-		<cameo.version>2.12-SNAPSHOT</cameo.version>
+		<cameo.version>2.12</cameo.version>
 		<curex.version>1.5.0</curex.version>
 		<jaffree.version>2024.08.29</jaffree.version>
 		<fft4j.version>2.0</fft4j.version>
