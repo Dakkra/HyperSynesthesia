@@ -1,9 +1,10 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Xenon - HyperSynes" type="Application" factoryName="Application">
     <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
-    <option name="MAIN_CLASS_NAME" value="com.avereon.xenon.Xenon" />
+    <option name="MAIN_CLASS_NAME" value="com.avereon.xenon.Launcher" />
     <module name="hypersynesthesia" />
-    <option name="PROGRAM_PARAMETERS" value="-profile hypersynes" />
+    <option name="PROGRAM_PARAMETERS" value="-profile hypersynes --locale es" />
+    <option name="VM_PARAMETERS" value="-Duser.language=es -Dprism.forceGPU=true" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
