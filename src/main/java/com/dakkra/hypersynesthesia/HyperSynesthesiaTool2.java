@@ -61,13 +61,11 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createVideoPropertiesPane() {
 		GridPane grid = new GridPane();
 
-		grid.add( new Label( "Width:" ), 0, 0 );
-		grid.add( new Label( "Height:" ), 0, 1 );
-		grid.add( new Label( "Frame Rate:" ), 0, 2 );
+		grid.add( new Label( Rb.text( "tool", "video-width-prompt" ) ), 0, 0 );
+		grid.add( new Label( Rb.text( "tool", "video-height-prompt" ) ), 0, 1 );
+		grid.add( new Label( Rb.text( "tool", "video-frame-rate-prompt" ) ), 0, 2 );
 
-		String videoPropertiesString = Rb.text( "tool", "video-properties-title", "It's missing Mark!" );
-
-		TitledPane pane = new TitledPane( videoPropertiesString, grid );
+		TitledPane pane = new TitledPane( Rb.text( "tool", "video-properties-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
@@ -78,11 +76,11 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createBackgroundOptionsPane() {
 		GridPane grid = new GridPane();
 
-		grid.add( new Label( "Background:" ), 0, 0 );
-		grid.add( new Label( "Color:" ), 0, 1 );
-		grid.add( new Label( "Image:" ), 0, 2 );
+		grid.add( new Label( Rb.text( "tool", "background-option-prompt" ) ), 0, 0 );
+		grid.add( new Label( Rb.text( "tool", "background-color-prompt" ) ), 0, 1 );
+		grid.add( new Label( Rb.text( "tool", "background-image-prompt" ) ), 0, 2 );
 
-		TitledPane pane = new TitledPane( "Background Options", grid );
+		TitledPane pane = new TitledPane( Rb.text( "tool", "background-options-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
@@ -97,7 +95,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		grid.add( new Label( "Output Format:" ), 0, 1 );
 		grid.add( new Label( "Output Video:" ), 0, 2 );
 
-		TitledPane pane = new TitledPane( "Input and Output Files", grid );
+		TitledPane pane = new TitledPane( Rb.text( "tool", "input-and-output-files-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
@@ -111,7 +109,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		grid.add( new Label( "Bar Style:" ), 0, 0 );
 		grid.add( new Label( "Bar Color:" ), 0, 1 );
 
-		TitledPane pane = new TitledPane( "Bar Options", grid );
+		TitledPane pane = new TitledPane( Rb.text( "tool", "bar-customization-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
