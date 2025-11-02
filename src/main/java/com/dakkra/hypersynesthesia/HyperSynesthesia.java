@@ -7,10 +7,10 @@ import lombok.CustomLog;
 @CustomLog
 public class HyperSynesthesia extends Module {
 
-	private final ProjectAssetType projectAssetType;
+	private final ProjectResourceType projectResourceType;
 
 	public HyperSynesthesia() {
-		projectAssetType = new ProjectAssetType( this );
+		projectResourceType = new ProjectResourceType( this );
 	}
 
 	@Override
@@ -24,10 +24,10 @@ public class HyperSynesthesia extends Module {
 		super.startup();
 		log.atInfo().log( "Initializing HyperSynesthesia");
 
-		registerAssetType( projectAssetType );
+		registerAssetType( projectResourceType );
 		ToolRegistration registration = new ToolRegistration( this, HyperSynesthesiaTool.class);
 		registration.setName( "HyperSynestheisa Tool" );
-		registerTool( projectAssetType, registration );
+		registerTool( projectResourceType, registration );
 	}
 
 	@Override
@@ -35,8 +35,8 @@ public class HyperSynesthesia extends Module {
 		super.shutdown();
 		log.atInfo().log( "Closing HyperSynesthesia");
 
-		unregisterTool( projectAssetType, HyperSynesthesiaTool.class );
-		unregisterAssetType( projectAssetType );
+		unregisterTool( projectResourceType, HyperSynesthesiaTool.class );
+		unregisterAssetType( projectResourceType );
 	}
 
 	@Override

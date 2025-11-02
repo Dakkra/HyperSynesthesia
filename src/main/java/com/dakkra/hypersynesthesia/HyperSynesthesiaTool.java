@@ -1,7 +1,7 @@
 package com.dakkra.hypersynesthesia;
 
 import com.avereon.xenon.XenonProgramProduct;
-import com.avereon.xenon.asset.Asset;
+import com.avereon.xenon.resource.Resource;
 import com.avereon.xenon.task.Task;
 import com.avereon.xenon.tool.guide.GuidedTool;
 import com.dakkra.hypersynesthesia.ffmpeg.MusicFile;
@@ -67,8 +67,8 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	//
 	//	private long samplerate;
 
-	public HyperSynesthesiaTool( XenonProgramProduct product, Asset asset ) {
-		super( product, asset );
+	public HyperSynesthesiaTool( XenonProgramProduct product, Resource resource ) {
+		super( product, resource );
 
 		this.projectProcessor = new ProjectProcessor( product.getProgram() );
 
