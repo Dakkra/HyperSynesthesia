@@ -91,9 +91,9 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createSourceTargetPane() {
 		GridPane grid = new GridPane();
 
-		grid.add( new Label( "Input Audio:" ), 0, 0 );
-		grid.add( new Label( "Output Format:" ), 0, 1 );
-		grid.add( new Label( "Output Video:" ), 0, 2 );
+		grid.add( new Label( Rb.text( "tool", "source-path-prompt" ) ), 0, 0 );
+		grid.add( new Label( Rb.text( "tool", "target-format-prompt" ) ), 0, 1 );
+		grid.add( new Label( Rb.text( "tool", "target-path-prompt" ) ), 0, 2 );
 
 		TitledPane pane = new TitledPane( Rb.text( "tool", "input-and-output-files-title" ), grid );
 		pane.setCollapsible( false );
@@ -106,8 +106,8 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createBarOptionsPane() {
 		GridPane grid = new GridPane();
 
-		grid.add( new Label( "Bar Style:" ), 0, 0 );
-		grid.add( new Label( "Bar Color:" ), 0, 1 );
+		grid.add( new Label( Rb.text( "tool", "bar-style-prompt" ) ), 0, 0 );
+		grid.add( new Label( Rb.text( "tool", "bar-color-prompt" ) ), 0, 1 );
 
 		TitledPane pane = new TitledPane( Rb.text( "tool", "bar-customization-title" ), grid );
 		pane.setCollapsible( false );
