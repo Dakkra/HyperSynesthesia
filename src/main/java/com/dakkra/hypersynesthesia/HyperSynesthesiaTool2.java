@@ -27,34 +27,6 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 	private static final Color DEFAULT_BAR_COLOR = Color.WHITE;
 
-	private static final OutputFormat DEFAULT_OUTPUT_FORMAT = OutputFormat.MP4;
-
-	//	// Video Properties
-	//	private int width = 1920;
-	//
-	//	private int height = 1080;
-	//
-	//	private int frameRate = 60;
-	//
-	//	// Background Options
-	//	private BackgroundOption backgroundOption = BackgroundOption.COLOR;
-	//
-	//	private Paint backgroundPaint = Color.BLACK;
-	//
-	//	private Path backgroundImage = null;
-	//
-	//	// Source and target file locations
-	//	private Path sourceAudio = null;
-	//
-	//	private Path targetVideo = null;
-	//
-	//	private OutputFormat outputFormat = OutputFormat.MP4;
-	//
-	//	// Bar options
-	//	private BarStyle barStyle = BarStyle.THICK_BLOCK;
-	//
-	//	private Paint barPaint = Color.WHITE;
-
 	// Video Properties
 	private final TextField width;
 
@@ -75,9 +47,9 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private final TextField targetVideo;
 
 	// Bar options
-	private ComboBox<Option<BarStyle>> barStyle;
+	private final ComboBox<Option<BarStyle>> barStyle;
 
-	private ColorPicker barPaint;
+	private final ColorPicker barPaint;
 
 	public HyperSynesthesiaTool2( XenonProgramProduct product, Resource resource ) {
 		super( product, resource );
@@ -85,9 +57,6 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		width = new TextField( String.valueOf( DEFAULT_WIDTH ) );
 		height = new TextField( String.valueOf( DEFAULT_HEIGHT ) );
 		frameRate = new TextField( String.valueOf( DEFAULT_FRAME_RATE ) );
-
-		backgroundPaint = new ColorPicker( DEFAULT_BACKGROUND_COLOR );
-		backgroundImage = new TextField();
 
 		sourceAudio = new TextField();
 		outputFormat = new ComboBox<>( FXCollections.observableList( Option.ofEnum( OutputFormat.values() ) ) );
@@ -97,6 +66,9 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		barStyle = new ComboBox<>( FXCollections.observableList( Option.ofEnum( BarStyle.values() ) ) );
 		barStyle.getSelectionModel().selectFirst();
 		barPaint = new ColorPicker( DEFAULT_BAR_COLOR );
+
+		backgroundPaint = new ColorPicker( DEFAULT_BACKGROUND_COLOR );
+		backgroundImage = new TextField();
 
 		GridPane grid = new GridPane();
 		StackPane.setMargin( grid, new Insets( 10 ) );
