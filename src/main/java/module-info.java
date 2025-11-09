@@ -9,6 +9,7 @@ module com.dakkra.hypersynthesthesia {
 	requires fft4j;
 	requires org.slf4j;
 	requires org.jspecify;
+	requires javafx.graphics;
 
 	exports com.dakkra.hypersynesthesia to com.avereon.xenon;
 

@@ -4,8 +4,11 @@ import com.avereon.product.Rb;
 import com.avereon.xenon.UiFactory;
 import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.resource.Resource;
+import com.avereon.xenon.task.Task;
 import com.avereon.xenon.tool.guide.GuidedTool;
 import com.avereon.zerra.Option;
+import com.dakkra.hypersynesthesia.ffmpeg.MusicFile;
+import com.dakkra.hypersynesthesia.ffmpeg.ProjectProcessor;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -14,6 +17,10 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
+
+import java.io.File;
+import java.nio.file.Path;
 
 public class HyperSynesthesiaTool2 extends GuidedTool {
 
@@ -28,6 +35,8 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private static final Color DEFAULT_BAR_COLOR = Color.WHITE;
 
 	private static final String BUNDLE = "tool";
+
+	private final ProjectProcessor projectProcessor;
 
 	// Video Properties
 	private final TextField width;
@@ -53,8 +62,14 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 	private final ColorPicker barPaint;
 
+	private final Button executeButton;
+
+	private MusicFile music;
+
 	public HyperSynesthesiaTool2( XenonProgramProduct product, Resource resource ) {
 		super( product, resource );
+
+		projectProcessor = new ProjectProcessor( product.getProgram() );
 
 		width = new TextField( String.valueOf( DEFAULT_WIDTH ) );
 		height = new TextField( String.valueOf( DEFAULT_HEIGHT ) );
@@ -72,6 +87,11 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		backgroundPaint = new ColorPicker( DEFAULT_BACKGROUND_COLOR );
 		backgroundImage = new TextField();
 
+		executeButton = new Button( Rb.text( getProduct(), BUNDLE, "generate" ) );
+		GridPane.setHgrow( executeButton, javafx.scene.layout.Priority.ALWAYS );
+		executeButton.setMaxWidth( Double.MAX_VALUE );
+		executeButton.setDisable( true );
+
 		GridPane grid = new GridPane();
 		StackPane.setMargin( grid, new Insets( 10 ) );
 		grid.setHgap( 10 );
@@ -81,8 +101,52 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		grid.add( createBackgroundOptionsPane(), 1, 0 );
 		grid.add( createSourceTargetPane(), 0, 1 );
 		grid.add( createBarOptionsPane(), 1, 1 );
+		grid.add( executeButton, 0, 2, 2, 1 );
 
 		getChildren().addAll( grid );
+
+		executeButton.setOnAction( event -> {
+			execute();
+		} );
+	}
+
+	private void requestBackgroundImage() {
+
+	}
+
+	private void requestSourceAudioFile() {
+		FileChooser fileChooser = new FileChooser();
+		fileChooser.setTitle( Rb.text( getProduct(), BUNDLE, "source-audio-prompt" ) );
+		fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Music" ) );
+		Path inputFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() ).toPath();
+
+		sourceAudio.setText( inputFile.toString() );
+
+		Task<Void> loadTask = Task.of( "Load Music", () -> {
+			music = projectProcessor.loadMusicFile( inputFile );
+			// TODO Update actions
+			return null;
+		} );
+		getProgram().getTaskManager().submit( loadTask );
+	}
+
+	private void requestTargetVideoFile() {
+		FileChooser fileChooser = new FileChooser();
+		fileChooser.setTitle( Rb.text( getProduct(), BUNDLE, "target-video-prompt" ) );
+		fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Videos" ) );
+		Path outputFile = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() ).toPath();
+
+		targetVideo.setText( outputFile.toString() );
+		executeButton.setDisable( false );
+	}
+
+	private void execute() {
+		int width = Integer.parseInt( this.width.getText() );
+		int height = Integer.parseInt( this.height.getText() );
+
+		Path outputPath = Path.of( targetVideo.getText() );
+		Task<?> renderTask = Task.of( "Render Video", () -> projectProcessor.renderVideoFile( music, width, height, outputPath ) );
+		getProgram().getTaskManager().submit( renderTask );
 	}
 
 	private TitledPane createVideoPropertiesPane() {
@@ -182,6 +246,9 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
+
+		sourceAudioButton.setOnAction( event -> requestSourceAudioFile() );
+		targetVideoButton.setOnAction( event -> requestTargetVideoFile() );
 
 		return pane;
 	}
