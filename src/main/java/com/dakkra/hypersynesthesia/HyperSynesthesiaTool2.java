@@ -5,6 +5,7 @@ import com.avereon.xenon.UiFactory;
 import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.resource.Resource;
 import com.avereon.xenon.tool.guide.GuidedTool;
+import com.avereon.zerra.Option;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
