@@ -18,8 +18,9 @@ public record Option<T>(T key, String name) {
 		List<Option<T>> optionList = new ArrayList<>();
 		for( T option : options ) {
 			String name = option.toString();
-			if( option instanceof Enum<?> ) {
-				name = ((Enum<?>)option).name().toLowerCase().replace( '_', '-' );
+			if( option instanceof Enum<?> enumOption ) {
+
+				name = enumOption.getClass().getSimpleName().toLowerCase() + "-" + enumOption.name().toLowerCase().replace( '_', '-' );
 			}
 			optionList.add( new Option<>( option, Rb.text( "tool", name ) ) );
 		}

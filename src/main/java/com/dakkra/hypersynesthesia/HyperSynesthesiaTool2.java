@@ -12,8 +12,21 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 
 public class HyperSynesthesiaTool2 extends GuidedTool {
+
+	private static final int DEFAULT_WIDTH = 1920;
+
+	private static final int DEFAULT_HEIGHT = 1080;
+
+	private static final int DEFAULT_FRAME_RATE = 60;
+
+	private static final Color DEFAULT_BACKGROUND_COLOR = Color.BLACK;
+
+	private static final Color DEFAULT_BAR_COLOR = Color.WHITE;
+
+	private static final OutputFormat DEFAULT_OUTPUT_FORMAT = OutputFormat.MP4;
 
 	//	// Video Properties
 	//	private int width = 1920;
@@ -42,33 +55,47 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	//	private Paint barPaint = Color.WHITE;
 
 	// Video Properties
-	private final TextField width = new TextField();
+	private final TextField width;
 
-	private final TextField height = new TextField();
+	private final TextField height;
 
-	private final TextField frameRate = new TextField();
+	private final TextField frameRate;
 
 	// Background Options
-	private final ColorPicker backgroundPaint = new ColorPicker();
+	private final ColorPicker backgroundPaint;
 
-	private final TextField backgroundImage = new TextField();
+	private final TextField backgroundImage;
 
 	// Source and target file locations
-	private final TextField sourceAudio = new TextField();
+	private final TextField sourceAudio;
 
-	private final TextField targetVideo = new TextField();
+	private final ComboBox<Option<OutputFormat>> outputFormat;
 
-	private ComboBox<Option<OutputFormat>> outputFormat;
+	private final TextField targetVideo;
 
 	// Bar options
-	private TextField barStyle = new TextField();
+	private ComboBox<Option<BarStyle>> barStyle;
 
-	private TextField barPaint = new TextField();
+	private ColorPicker barPaint;
 
 	public HyperSynesthesiaTool2( XenonProgramProduct product, Resource resource ) {
 		super( product, resource );
 
+		width = new TextField( String.valueOf( DEFAULT_WIDTH ) );
+		height = new TextField( String.valueOf( DEFAULT_HEIGHT ) );
+		frameRate = new TextField( String.valueOf( DEFAULT_FRAME_RATE ) );
+
+		backgroundPaint = new ColorPicker( DEFAULT_BACKGROUND_COLOR );
+		backgroundImage = new TextField();
+
+		sourceAudio = new TextField();
 		outputFormat = new ComboBox<>( FXCollections.observableList( Option.ofEnum( OutputFormat.values() ) ) );
+		outputFormat.getSelectionModel().selectFirst();
+		targetVideo = new TextField();
+
+		barStyle = new ComboBox<>( FXCollections.observableList( Option.ofEnum( BarStyle.values() ) ) );
+		barStyle.getSelectionModel().selectFirst();
+		barPaint = new ColorPicker( DEFAULT_BAR_COLOR );
 
 		GridPane grid = new GridPane();
 		StackPane.setMargin( grid, new Insets( 10 ) );
@@ -134,10 +161,10 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		grid.add( backgroundImageButton, 2, 2 );
 
 		GridPane.setHgrow( backgroundPaintPrompt, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setHgrow( backgroundImagePrompt, javafx.scene.layout.Priority.ALWAYS );
-
-		backgroundPaint.setMaxWidth( Double.MAX_VALUE );
 		GridPane.setColumnSpan( backgroundPaint, 2 );
+		backgroundPaint.setMaxWidth( Double.MAX_VALUE );
+		GridPane.setHgrow( backgroundImagePrompt, javafx.scene.layout.Priority.ALWAYS );
+		GridPane.setHgrow( backgroundImage, javafx.scene.layout.Priority.ALWAYS );
 
 		TitledPane pane = new TitledPane( Rb.text( "tool", "background-options-title" ), grid );
 		pane.setCollapsible( false );
@@ -150,9 +177,31 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createSourceTargetPane() {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
-		grid.add( new Label( Rb.text( "tool", "source-path-prompt" ) ), 0, 0 );
-		grid.add( new Label( Rb.text( "tool", "target-format-prompt" ) ), 0, 1 );
-		grid.add( new Label( Rb.text( "tool", "target-path-prompt" ) ), 0, 2 );
+		Label sourceAudioPrompt = new Label( Rb.text( "tool", "source-path-prompt" ) );
+		Label outputFormatPrompt = new Label( Rb.text( "tool", "target-format-prompt" ) );
+		Label targetVideoPrompt = new Label( Rb.text( "tool", "target-path-prompt" ) );
+
+		Node sourceAudioFileIcon = getProgram().getIconLibrary().getIcon( "file" );
+		Button sourceAudioButton = new Button( null, sourceAudioFileIcon );
+		Node targetVideoFileIcon = getProgram().getIconLibrary().getIcon( "file" );
+		Button targetVideoButton = new Button( null, targetVideoFileIcon );
+
+		grid.add( sourceAudioPrompt, 0, 0 );
+		grid.add( sourceAudio, 1, 0 );
+		grid.add( sourceAudioButton, 2, 0 );
+		grid.add( outputFormatPrompt, 0, 1 );
+		grid.add( outputFormat, 1, 1 );
+		grid.add( targetVideoPrompt, 0, 2 );
+		grid.add( targetVideo, 1, 2 );
+		grid.add( targetVideoButton, 2, 2 );
+
+		GridPane.setHgrow( sourceAudioPrompt, javafx.scene.layout.Priority.ALWAYS );
+		GridPane.setHgrow( sourceAudio, javafx.scene.layout.Priority.ALWAYS );
+		GridPane.setHgrow( outputFormatPrompt, javafx.scene.layout.Priority.ALWAYS );
+		GridPane.setColumnSpan( outputFormat, 2 );
+		outputFormat.setMaxWidth( Double.MAX_VALUE );
+		GridPane.setHgrow( targetVideoPrompt, javafx.scene.layout.Priority.ALWAYS );
+		GridPane.setHgrow( targetVideo, javafx.scene.layout.Priority.ALWAYS );
 
 		TitledPane pane = new TitledPane( Rb.text( "tool", "input-and-output-files-title" ), grid );
 		pane.setCollapsible( false );
@@ -165,8 +214,19 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createBarOptionsPane() {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
-		grid.add( new Label( Rb.text( "tool", "bar-style-prompt" ) ), 0, 0 );
-		grid.add( new Label( Rb.text( "tool", "bar-color-prompt" ) ), 0, 1 );
+		Label barStylePrompt = new Label( Rb.text( "tool", "bar-style-prompt" ) );
+		Label barColorPrompt = new Label( Rb.text( "tool", "bar-color-prompt" ) );
+
+		grid.add( barStylePrompt, 0, 0 );
+		grid.add( barStyle, 1, 0 );
+		grid.add( barColorPrompt, 0, 1 );
+		grid.add( barPaint, 1, 1 );
+
+		GridPane.setHgrow( barStylePrompt, javafx.scene.layout.Priority.ALWAYS );
+		GridPane.setHgrow( barColorPrompt, javafx.scene.layout.Priority.ALWAYS );
+
+		barStyle.setMaxWidth( Double.MAX_VALUE );
+		barPaint.setMaxWidth( Double.MAX_VALUE );
 
 		TitledPane pane = new TitledPane( Rb.text( "tool", "bar-customization-title" ), grid );
 		pane.setCollapsible( false );
