@@ -8,6 +8,7 @@ module com.dakkra.hypersynthesthesia {
 	requires com.github.kokorin.jaffree;
 	requires fft4j;
 	requires org.slf4j;
+	requires org.jspecify;
 
 	exports com.dakkra.hypersynesthesia to com.avereon.xenon;
 
