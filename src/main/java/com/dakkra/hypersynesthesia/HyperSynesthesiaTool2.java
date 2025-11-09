@@ -59,11 +59,11 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		frameRate = new TextField( String.valueOf( DEFAULT_FRAME_RATE ) );
 
 		sourceAudio = new TextField();
-		outputFormat = new ComboBox<>( FXCollections.observableList( Option.ofEnum( OutputFormat.values() ) ) );
+		outputFormat = new ComboBox<>( FXCollections.observableList( Option.of( product, "tool", OutputFormat.values() ) ) );
 		outputFormat.getSelectionModel().selectFirst();
 		targetVideo = new TextField();
 
-		barStyle = new ComboBox<>( FXCollections.observableList( Option.ofEnum( BarStyle.values() ) ) );
+		barStyle = new ComboBox<>( FXCollections.observableList( Option.of( product, "tool", BarStyle.values() ) ) );
 		barStyle.getSelectionModel().selectFirst();
 		barPaint = new ColorPicker( DEFAULT_BAR_COLOR );
 
@@ -86,9 +86,9 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createVideoPropertiesPane() {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
-		Label widthLabel = new Label( Rb.text( "tool", "video-width-prompt" ) );
-		Label heightLabel = new Label( Rb.text( "tool", "video-height-prompt" ) );
-		Label frameRateLabel = new Label( Rb.text( "tool", "video-frame-rate-prompt" ) );
+		Label widthLabel = new Label( Rb.text( getProduct(), "tool", "video-width-prompt" ) );
+		Label heightLabel = new Label( Rb.text( getProduct(), "tool", "video-height-prompt" ) );
+		Label frameRateLabel = new Label( Rb.text( getProduct(), "tool", "video-frame-rate-prompt" ) );
 
 		grid.add( widthLabel, 0, 0 );
 		grid.add( width, 1, 0 );
@@ -110,7 +110,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		frameRate.setAlignment( Pos.BASELINE_RIGHT );
 		frameRate.setPromptText( "60" );
 
-		TitledPane pane = new TitledPane( Rb.text( "tool", "video-properties-title" ), grid );
+		TitledPane pane = new TitledPane( Rb.text( getProduct(), "tool", "video-properties-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
@@ -121,11 +121,11 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createBackgroundOptionsPane() {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
-		Label backgroundPaintPrompt = new Label( Rb.text( "tool", "background-color-prompt" ) );
-		Label backgroundImagePrompt = new Label( Rb.text( "tool", "background-image-prompt" ) );
+		Label backgroundPaintPrompt = new Label( Rb.text( getProduct(), "tool", "background-color-prompt" ) );
+		Label backgroundImagePrompt = new Label( Rb.text( getProduct(), "tool", "background-image-prompt" ) );
 
 		Node fileIcon = getProgram().getIconLibrary().getIcon( "file" );
-		Button backgroundImageButton = new Button( null, fileIcon);
+		Button backgroundImageButton = new Button( null, fileIcon );
 
 		grid.add( backgroundPaintPrompt, 0, 1 );
 		grid.add( backgroundPaint, 1, 1 );
@@ -139,7 +139,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane.setHgrow( backgroundImagePrompt, javafx.scene.layout.Priority.ALWAYS );
 		GridPane.setHgrow( backgroundImage, javafx.scene.layout.Priority.ALWAYS );
 
-		TitledPane pane = new TitledPane( Rb.text( "tool", "background-options-title" ), grid );
+		TitledPane pane = new TitledPane( Rb.text( getProduct(), "tool", "background-options-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
@@ -150,9 +150,9 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createSourceTargetPane() {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
-		Label sourceAudioPrompt = new Label( Rb.text( "tool", "source-path-prompt" ) );
-		Label outputFormatPrompt = new Label( Rb.text( "tool", "target-format-prompt" ) );
-		Label targetVideoPrompt = new Label( Rb.text( "tool", "target-path-prompt" ) );
+		Label sourceAudioPrompt = new Label( Rb.text( getProduct(), "tool", "source-path-prompt" ) );
+		Label outputFormatPrompt = new Label( Rb.text( getProduct(), "tool", "target-format-prompt" ) );
+		Label targetVideoPrompt = new Label( Rb.text( getProduct(), "tool", "target-path-prompt" ) );
 
 		Node sourceAudioFileIcon = getProgram().getIconLibrary().getIcon( "file" );
 		Button sourceAudioButton = new Button( null, sourceAudioFileIcon );
@@ -176,7 +176,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane.setHgrow( targetVideoPrompt, javafx.scene.layout.Priority.ALWAYS );
 		GridPane.setHgrow( targetVideo, javafx.scene.layout.Priority.ALWAYS );
 
-		TitledPane pane = new TitledPane( Rb.text( "tool", "input-and-output-files-title" ), grid );
+		TitledPane pane = new TitledPane( Rb.text( getProduct(), "tool", "input-and-output-files-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
@@ -187,8 +187,8 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createBarOptionsPane() {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
-		Label barStylePrompt = new Label( Rb.text( "tool", "bar-style-prompt" ) );
-		Label barColorPrompt = new Label( Rb.text( "tool", "bar-color-prompt" ) );
+		Label barStylePrompt = new Label( Rb.text( getProduct(), "tool", "bar-style-prompt" ) );
+		Label barColorPrompt = new Label( Rb.text( getProduct(), "tool", "bar-color-prompt" ) );
 
 		grid.add( barStylePrompt, 0, 0 );
 		grid.add( barStyle, 1, 0 );
@@ -201,7 +201,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		barStyle.setMaxWidth( Double.MAX_VALUE );
 		barPaint.setMaxWidth( Double.MAX_VALUE );
 
-		TitledPane pane = new TitledPane( Rb.text( "tool", "bar-customization-title" ), grid );
+		TitledPane pane = new TitledPane( Rb.text( getProduct(), "tool", "bar-customization-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
