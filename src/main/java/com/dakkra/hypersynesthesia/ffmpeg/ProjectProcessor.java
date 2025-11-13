@@ -31,16 +31,18 @@ public class ProjectProcessor {
 	}
 
 	public MusicFile loadMusicFile( Path inputFile ) {
-		return loadMusicFile( inputFile, sampleCount -> {
-			System.out.println( "Music File " + inputFile.getFileName() + " has " + sampleCount + " samples" );
-		}, numFFTs -> {
-			System.out.println( "Number of FFT tasks: " + numFFTs );
-		}, progress -> {
-			System.out.println( "Progress: " + progress );
-		} );
+		return loadMusicFile(
+			inputFile, sampleCount -> {
+				System.out.println( "Music File " + inputFile.getFileName() + " has " + sampleCount + " samples" );
+			}, numFFTs -> {
+				System.out.println( "Number of FFT tasks: " + numFFTs );
+			}, progress -> {
+				System.out.println( "Progress: " + progress );
+			}
+		);
 	}
 
-	public MusicFile loadMusicFile( Path inputFile, Consumer<Integer> sampleCountConsumer, Consumer<Integer> fftCountConsumer, Consumer<Integer> progressConsumer ) {
+	public MusicFile loadMusicFile( Path inputFile, Consumer<Integer> sampleCountConsumer, Consumer<Integer> fftCountConsumer, Consumer<Double> progressConsumer ) {
 		MusicFile music = new MusicFile( inputFile ).load();
 		sampleCountConsumer.accept( music.getNumSamples() );
 
@@ -65,12 +67,13 @@ public class ProjectProcessor {
 
 		//System.out.println( "FFT Tasks submitted, waiting for completion" );
 
-		int count = 0;
-		progressConsumer.accept( count );
+		double count = 0;
+		double total = numFFTs + 1;
+		progressConsumer.accept( 0.0 );
 		for( Future<?> future : futures ) {
 			try {
 				future.get();
-				progressConsumer.accept( ++count );
+				progressConsumer.accept( ++count / total );
 			} catch( InterruptedException | ExecutionException e ) {
 				log.atError().withCause( e ).log( "Error calculating FFT" );
 			}

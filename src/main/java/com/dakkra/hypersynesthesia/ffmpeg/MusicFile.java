@@ -45,7 +45,7 @@ public class MusicFile {
 
 			@Override
 			public void consumeStreams( List<Stream> streams ) {
-				sampleRate = streams.get( 0 ).getSampleRate();
+				sampleRate = streams.getFirst().getSampleRate();
 			}
 
 			@Override

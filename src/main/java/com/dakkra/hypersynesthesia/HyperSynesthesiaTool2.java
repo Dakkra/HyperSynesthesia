@@ -82,7 +82,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		sourceAudio = new TextField();
 		sampleCount = new TextField();
 		fftCount = new TextField();
-		audioProgressBar = new ProgressBar();
+		audioProgressBar = new ProgressBar( 0 );
 
 		width = new TextField( String.valueOf( DEFAULT_WIDTH ) );
 		height = new TextField( String.valueOf( DEFAULT_HEIGHT ) );
@@ -134,6 +134,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		Path inputFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() ).toPath();
 
 		sourceAudio.setText( inputFile.toString() );
+		audioProgressBar.setProgress( ProgressIndicator.INDETERMINATE_PROGRESS );
 
 		Task<Void> loadTask = Task.of(
 			"Load Music", () -> {
@@ -142,19 +143,10 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 						Fx.run( () -> this.sampleCount.setText( String.valueOf( sampleCount ) ) );
 					}, fftCount -> {
 						Fx.run( () -> this.fftCount.setText( String.valueOf( fftCount ) ) );
-					}, progressCount -> {
-						//
+					}, progress -> {
+						Fx.run( () -> audioProgressBar.setProgress( progress ) );
 					}
 				);
-				// TODO Update actions
-
-				//				Music File DemoTrack.wav has 4006957 samples
-				//				Pre-calculating FFTs
-				//				Number of FFT tasks: 5008
-				//				FFT Tasks submitted, waiting for completion
-				//				Done pre-calculating FFTs, waiting for threads to finish
-				//				FFT Queue size: 5009
-
 				return null;
 			}
 		);
@@ -176,7 +168,19 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		int height = Integer.parseInt( this.height.getText() );
 
 		Path outputPath = Path.of( targetVideo.getText() );
-		Task<?> renderTask = Task.of( "Render Video", () -> projectProcessor.renderVideoFile( music, width, height, outputPath ) );
+		Task<?> renderTask = Task.of( "Render Video", () -> {
+			projectProcessor.renderVideoFile( music, width, height, outputPath );
+
+//			Triggering render
+//			Rendering complete
+//			Rendered 5009 frames
+//			Encoding video
+//			Input file duration: 83 seconds
+//			Target video resolution: 1920x1080
+//			Render and encoding took: 0 minutes and 11 seconds
+//			Render and encoding was 754.55% of real time
+
+		} );
 		getProgram().getTaskManager().submit( renderTask );
 	}
 
