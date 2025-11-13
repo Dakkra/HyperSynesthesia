@@ -72,7 +72,6 @@ public class MusicFile {
 
 		numSamples = samplesAvg.size();
 		this.fftQueue = new PriorityBlockingQueue<>( (int)(sampleRate / 60) );
-		System.out.println( "Music File " + file.getFileName() + " has " + numSamples + " samples" );
 
 		return this;
 	}

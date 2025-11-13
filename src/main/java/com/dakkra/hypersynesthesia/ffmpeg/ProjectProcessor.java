@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 @CustomLog
 public class ProjectProcessor {
@@ -30,13 +31,25 @@ public class ProjectProcessor {
 	}
 
 	public MusicFile loadMusicFile( Path inputFile ) {
+		return loadMusicFile( inputFile, sampleCount -> {
+			System.out.println( "Music File " + inputFile.getFileName() + " has " + sampleCount + " samples" );
+		}, numFFTs -> {
+			System.out.println( "Number of FFT tasks: " + numFFTs );
+		}, progress -> {
+			System.out.println( "Progress: " + progress );
+		} );
+	}
+
+	public MusicFile loadMusicFile( Path inputFile, Consumer<Integer> sampleCountConsumer, Consumer<Integer> fftCountConsumer, Consumer<Integer> progressConsumer ) {
 		MusicFile music = new MusicFile( inputFile ).load();
+		sampleCountConsumer.accept( music.getNumSamples() );
 
 		// pre calc FFTs multithreaded
-		System.out.println( "Pre-calculating FFTs" );
+		//System.out.println( "Pre-calculating FFTs" );
 		ArrayList<Future<?>> futures = new ArrayList<>();
 		int numFFTs = (int)(music.getNumSamples() / (music.getSampleRate() / 60.0));
-		System.out.println( "Number of FFT tasks: " + numFFTs );
+		//System.out.println( "Number of FFT tasks: " + numFFTs );
+		fftCountConsumer.accept( numFFTs );
 		for( int frameIdx = 0; frameIdx <= numFFTs; frameIdx++ ) {
 			int index = frameIdx;
 			int audioBufferSize = (int)(music.getSampleRate() / 60);
@@ -50,18 +63,21 @@ public class ProjectProcessor {
 			futures.add( result );
 		}
 
-		System.out.println( "FFT Tasks submitted, waiting for completion" );
+		//System.out.println( "FFT Tasks submitted, waiting for completion" );
 
+		int count = 0;
+		progressConsumer.accept( count );
 		for( Future<?> future : futures ) {
 			try {
 				future.get();
+				progressConsumer.accept( ++count );
 			} catch( InterruptedException | ExecutionException e ) {
 				log.atError().withCause( e ).log( "Error calculating FFT" );
 			}
 		}
 
-		System.out.println( "Done pre-calculating FFTs, waiting for threads to finish" );
-		System.out.println( "FFT Queue size: " + music.getFftQueue().size() );
+		//System.out.println( "Done pre-calculating FFTs, waiting for threads to finish" );
+		//System.out.println( "FFT Queue size: " + music.getFftQueue().size() );
 
 		return music;
 	}

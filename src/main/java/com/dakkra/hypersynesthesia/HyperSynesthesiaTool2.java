@@ -7,6 +7,7 @@ import com.avereon.xenon.resource.Resource;
 import com.avereon.xenon.task.Task;
 import com.avereon.xenon.tool.guide.GuidedTool;
 import com.avereon.zerra.Option;
+import com.avereon.zerra.javafx.Fx;
 import com.dakkra.hypersynesthesia.ffmpeg.MusicFile;
 import com.dakkra.hypersynesthesia.ffmpeg.ProjectProcessor;
 import javafx.collections.FXCollections;
@@ -38,21 +39,28 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 	private final ProjectProcessor projectProcessor;
 
-	// Video Properties
+	// Source audio properties
+	private final TextField sourceAudio;
+
+	private final TextField sampleCount;
+
+	private final TextField fftCount;
+
+	private final ProgressBar audioProgressBar;
+
+	// Video properties
 	private final TextField width;
 
 	private final TextField height;
 
 	private final TextField frameRate;
 
-	// Background Options
+	// Background options
 	private final ColorPicker backgroundPaint;
 
 	private final TextField backgroundImage;
 
-	// Source and target file locations
-	private final TextField sourceAudio;
-
+	// Target file properties
 	private final ComboBox<Option<OutputFormat>> outputFormat;
 
 	private final TextField targetVideo;
@@ -71,11 +79,18 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 		projectProcessor = new ProjectProcessor( product.getProgram() );
 
+		sourceAudio = new TextField();
+		sampleCount = new TextField();
+		fftCount = new TextField();
+		audioProgressBar = new ProgressBar();
+
 		width = new TextField( String.valueOf( DEFAULT_WIDTH ) );
 		height = new TextField( String.valueOf( DEFAULT_HEIGHT ) );
 		frameRate = new TextField( String.valueOf( DEFAULT_FRAME_RATE ) );
 
-		sourceAudio = new TextField();
+		backgroundPaint = new ColorPicker( DEFAULT_BACKGROUND_COLOR );
+		backgroundImage = new TextField();
+
 		outputFormat = new ComboBox<>( FXCollections.observableList( Option.of( product, BUNDLE, OutputFormat.values() ) ) );
 		outputFormat.getSelectionModel().selectFirst();
 		targetVideo = new TextField();
@@ -83,9 +98,6 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		barStyle = new ComboBox<>( FXCollections.observableList( Option.of( product, BUNDLE, BarStyle.values() ) ) );
 		barStyle.getSelectionModel().selectFirst();
 		barPaint = new ColorPicker( DEFAULT_BAR_COLOR );
-
-		backgroundPaint = new ColorPicker( DEFAULT_BACKGROUND_COLOR );
-		backgroundImage = new TextField();
 
 		executeButton = new Button( Rb.text( getProduct(), BUNDLE, "generate" ) );
 		GridPane.setHgrow( executeButton, javafx.scene.layout.Priority.ALWAYS );
@@ -97,11 +109,12 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		grid.setHgap( 10 );
 		grid.setVgap( 10 );
 
-		grid.add( createVideoPropertiesPane(), 0, 0 );
-		grid.add( createBackgroundOptionsPane(), 1, 0 );
-		grid.add( createSourceTargetPane(), 0, 1 );
-		grid.add( createBarOptionsPane(), 1, 1 );
-		grid.add( executeButton, 0, 2, 2, 1 );
+		grid.add( createAudioSourcePane(), 0, 0, 2, 1 );
+		grid.add( createVideoPropertiesPane(), 0, 1, 1, 1 );
+		grid.add( createBackgroundOptionsPane(), 1, 1, 1, 1 );
+		grid.add( createSourceTargetPane(), 0, 2, 1, 1 );
+		grid.add( createBarOptionsPane(), 1, 2, 1, 1 );
+		grid.add( executeButton, 0, 3, 2, 1 );
 
 		getChildren().addAll( grid );
 
@@ -122,11 +135,29 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 		sourceAudio.setText( inputFile.toString() );
 
-		Task<Void> loadTask = Task.of( "Load Music", () -> {
-			music = projectProcessor.loadMusicFile( inputFile );
-			// TODO Update actions
-			return null;
-		} );
+		Task<Void> loadTask = Task.of(
+			"Load Music", () -> {
+				music = projectProcessor.loadMusicFile(
+					inputFile, sampleCount -> {
+						Fx.run( () -> this.sampleCount.setText( String.valueOf( sampleCount ) ) );
+					}, fftCount -> {
+						Fx.run( () -> this.fftCount.setText( String.valueOf( fftCount ) ) );
+					}, progressCount -> {
+						//
+					}
+				);
+				// TODO Update actions
+
+				//				Music File DemoTrack.wav has 4006957 samples
+				//				Pre-calculating FFTs
+				//				Number of FFT tasks: 5008
+				//				FFT Tasks submitted, waiting for completion
+				//				Done pre-calculating FFTs, waiting for threads to finish
+				//				FFT Queue size: 5009
+
+				return null;
+			}
+		);
 		getProgram().getTaskManager().submit( loadTask );
 	}
 
@@ -147,6 +178,46 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		Path outputPath = Path.of( targetVideo.getText() );
 		Task<?> renderTask = Task.of( "Render Video", () -> projectProcessor.renderVideoFile( music, width, height, outputPath ) );
 		getProgram().getTaskManager().submit( renderTask );
+	}
+
+	private TitledPane createAudioSourcePane() {
+		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
+
+		Label sourceAudioPrompt = new Label( Rb.text( getProduct(), BUNDLE, "source-path-prompt" ) );
+		Node sourceAudioFileIcon = getProgram().getIconLibrary().getIcon( "file" );
+		Button sourceAudioButton = new Button( null, sourceAudioFileIcon );
+		Label sampleCountPrompt = new Label( Rb.text( getProduct(), BUNDLE, "sample-count-prompt" ) );
+		Label fftCountPrompt = new Label( Rb.text( getProduct(), BUNDLE, "fft-count-prompt" ) );
+		grid.add( sourceAudioPrompt, 0, 0, 1, 1 );
+		grid.add( sourceAudio, 1, 0, 3, 1 );
+		grid.add( sourceAudioButton, 4, 0, 1, 1 );
+
+		grid.add( sampleCountPrompt, 0, 1, 1, 1 );
+		grid.add( sampleCount, 1, 1, 1, 1 );
+		grid.add( fftCountPrompt, 2, 1, 1, 1 );
+		grid.add( fftCount, 3, 1, 1, 1 );
+
+		grid.add( audioProgressBar, 0, 2, 5, 1 );
+		audioProgressBar.setMaxWidth( Double.MAX_VALUE );
+
+		sampleCount.setAlignment( Pos.BASELINE_RIGHT );
+		sampleCount.setEditable( false );
+		fftCount.setAlignment( Pos.BASELINE_RIGHT );
+		fftCount.setEditable( false );
+
+		//GridPane.setHgrow( sourceAudioPrompt, javafx.scene.layout.Priority.ALWAYS );
+		GridPane.setHgrow( sourceAudio, javafx.scene.layout.Priority.ALWAYS );
+		GridPane.setHgrow( sampleCount, javafx.scene.layout.Priority.ALWAYS );
+		GridPane.setHgrow( fftCount, javafx.scene.layout.Priority.ALWAYS );
+
+		sourceAudioButton.setOnAction( event -> requestSourceAudioFile() );
+
+		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "input-and-output-files-title" ), grid );
+		pane.setCollapsible( false );
+		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
+		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
+
+		return pane;
 	}
 
 	private TitledPane createVideoPropertiesPane() {
@@ -171,10 +242,10 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		width.setPromptText( String.valueOf( DEFAULT_WIDTH ) );
 
 		height.setAlignment( Pos.BASELINE_RIGHT );
-		height.setPromptText( String.valueOf( DEFAULT_HEIGHT) );
+		height.setPromptText( String.valueOf( DEFAULT_HEIGHT ) );
 
 		frameRate.setAlignment( Pos.BASELINE_RIGHT );
-		frameRate.setPromptText( String.valueOf( DEFAULT_FRAME_RATE) );
+		frameRate.setPromptText( String.valueOf( DEFAULT_FRAME_RATE ) );
 
 		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "video-properties-title" ), grid );
 		pane.setCollapsible( false );
@@ -216,26 +287,18 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private TitledPane createSourceTargetPane() {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
-		Label sourceAudioPrompt = new Label( Rb.text( getProduct(), BUNDLE, "source-path-prompt" ) );
 		Label outputFormatPrompt = new Label( Rb.text( getProduct(), BUNDLE, "target-format-prompt" ) );
 		Label targetVideoPrompt = new Label( Rb.text( getProduct(), BUNDLE, "target-path-prompt" ) );
 
-		Node sourceAudioFileIcon = getProgram().getIconLibrary().getIcon( "file" );
-		Button sourceAudioButton = new Button( null, sourceAudioFileIcon );
 		Node targetVideoFileIcon = getProgram().getIconLibrary().getIcon( "file" );
 		Button targetVideoButton = new Button( null, targetVideoFileIcon );
 
-		grid.add( sourceAudioPrompt, 0, 0 );
-		grid.add( sourceAudio, 1, 0 );
-		grid.add( sourceAudioButton, 2, 0 );
 		grid.add( outputFormatPrompt, 0, 1 );
 		grid.add( outputFormat, 1, 1 );
 		grid.add( targetVideoPrompt, 0, 2 );
 		grid.add( targetVideo, 1, 2 );
 		grid.add( targetVideoButton, 2, 2 );
 
-		GridPane.setHgrow( sourceAudioPrompt, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setHgrow( sourceAudio, javafx.scene.layout.Priority.ALWAYS );
 		GridPane.setHgrow( outputFormatPrompt, javafx.scene.layout.Priority.ALWAYS );
 		GridPane.setColumnSpan( outputFormat, 2 );
 		outputFormat.setMaxWidth( Double.MAX_VALUE );
@@ -247,7 +310,6 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
 
-		sourceAudioButton.setOnAction( event -> requestSourceAudioFile() );
 		targetVideoButton.setOnAction( event -> requestTargetVideoFile() );
 
 		return pane;
