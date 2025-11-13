@@ -168,19 +168,21 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		int height = Integer.parseInt( this.height.getText() );
 
 		Path outputPath = Path.of( targetVideo.getText() );
-		Task<?> renderTask = Task.of( "Render Video", () -> {
-			projectProcessor.renderVideoFile( music, width, height, outputPath );
+		Task<?> renderTask = Task.of(
+			"Render Video", () -> {
+				projectProcessor.renderVideoFile( music, width, height, outputPath );
 
-//			Triggering render
-//			Rendering complete
-//			Rendered 5009 frames
-//			Encoding video
-//			Input file duration: 83 seconds
-//			Target video resolution: 1920x1080
-//			Render and encoding took: 0 minutes and 11 seconds
-//			Render and encoding was 754.55% of real time
+				//			Triggering render
+				//			Rendering complete
+				//			Rendered 5009 frames
+				//			Encoding video
+				//			Input file duration: 83 seconds
+				//			Target video resolution: 1920x1080
+				//			Render and encoding took: 0 minutes and 11 seconds
+				//			Render and encoding was 754.55% of real time
 
-		} );
+			}
+		);
 		getProgram().getTaskManager().submit( renderTask );
 	}
 
@@ -201,7 +203,9 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		grid.add( fftCountPrompt, 2, 1, 1, 1 );
 		grid.add( fftCount, 3, 1, 1, 1 );
 
-		grid.add( audioProgressBar, 0, 2, 5, 1 );
+		Label audioProgressPrompt = new Label( Rb.text( getProduct(), BUNDLE, "generate-spectrum-prompt" ) );
+		grid.add( audioProgressPrompt, 0, 2, 1, 1 );
+		grid.add( audioProgressBar, 1, 2, 4, 1 );
 		audioProgressBar.setMaxWidth( Double.MAX_VALUE );
 
 		sampleCount.setAlignment( Pos.BASELINE_RIGHT );
