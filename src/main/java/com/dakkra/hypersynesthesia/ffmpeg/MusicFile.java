@@ -22,9 +22,11 @@ public class MusicFile {
 
 	private Vector<Integer> samplesAvg;
 
-	private long sampleRate = 0L;
+	private int sampleRate;
 
 	private int numSamples;
+
+	private int duration;
 
 	private PriorityBlockingQueue<PrioritySpectrum> fftQueue;
 
@@ -45,7 +47,7 @@ public class MusicFile {
 
 			@Override
 			public void consumeStreams( List<Stream> streams ) {
-				sampleRate = streams.getFirst().getSampleRate();
+				sampleRate = streams.getFirst().getSampleRate().intValue();
 			}
 
 			@Override
@@ -71,7 +73,8 @@ public class MusicFile {
 		} );
 
 		numSamples = samplesAvg.size();
-		this.fftQueue = new PriorityBlockingQueue<>( (int)(sampleRate / 60) );
+		duration = numSamples / sampleRate;
+		this.fftQueue = new PriorityBlockingQueue<>( sampleRate / 60 );
 
 		return this;
 	}

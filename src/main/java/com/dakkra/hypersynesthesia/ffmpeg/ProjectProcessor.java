@@ -31,27 +31,18 @@ public class ProjectProcessor {
 	}
 
 	public MusicFile loadMusicFile( Path inputFile ) {
-		return loadMusicFile(
-			inputFile, sampleCount -> {
-				System.out.println( "Music File " + inputFile.getFileName() + " has " + sampleCount + " samples" );
-			}, numFFTs -> {
-				System.out.println( "Number of FFT tasks: " + numFFTs );
-			}, progress -> {
-				System.out.println( "Progress: " + progress );
-			}
-		);
+		MusicFile music = loadMusicFile( inputFile, _ -> {} );
+		System.out.println( "Music File " + inputFile.getFileName() + " has " + music.getNumSamples() + " samples" );
+		System.out.println( "Number of FFT tasks: " + music.getFftQueue().size() );
+		return music;
 	}
 
-	public MusicFile loadMusicFile( Path inputFile, Consumer<Integer> sampleCountConsumer, Consumer<Integer> fftCountConsumer, Consumer<Double> progressConsumer ) {
+	public MusicFile loadMusicFile( Path inputFile, Consumer<Double> progressConsumer ) {
 		MusicFile music = new MusicFile( inputFile ).load();
-		sampleCountConsumer.accept( music.getNumSamples() );
 
 		// pre calc FFTs multithreaded
-		//System.out.println( "Pre-calculating FFTs" );
 		ArrayList<Future<?>> futures = new ArrayList<>();
 		int numFFTs = (int)(music.getNumSamples() / (music.getSampleRate() / 60.0));
-		//System.out.println( "Number of FFT tasks: " + numFFTs );
-		fftCountConsumer.accept( numFFTs );
 		for( int frameIdx = 0; frameIdx <= numFFTs; frameIdx++ ) {
 			int index = frameIdx;
 			int audioBufferSize = (int)(music.getSampleRate() / 60);
@@ -65,8 +56,6 @@ public class ProjectProcessor {
 			futures.add( result );
 		}
 
-		//System.out.println( "FFT Tasks submitted, waiting for completion" );
-
 		double count = 0;
 		double total = numFFTs + 1;
 		progressConsumer.accept( 0.0 );
@@ -78,9 +67,6 @@ public class ProjectProcessor {
 				log.atError().withCause( e ).log( "Error calculating FFT" );
 			}
 		}
-
-		//System.out.println( "Done pre-calculating FFTs, waiting for threads to finish" );
-		//System.out.println( "FFT Queue size: " + music.getFftQueue().size() );
 
 		return music;
 	}
@@ -114,13 +100,14 @@ public class ProjectProcessor {
 
 		long finalTime = Clock.systemUTC().millis();
 		long deltaTime = finalTime - initialTime;
-		Duration duration = Duration.ofMillis( deltaTime );
+		Duration renderDuration = Duration.ofMillis( deltaTime );
+		Duration musicDuration = Duration.ofSeconds( music.getDuration() );
+		double renderRatio = (double)musicDuration.getSeconds() / (double)renderDuration.getSeconds();
 
-		long musicSeconds = music.getNumSamples() / music.getSampleRate();
-		System.out.println( "Input file duration: " + musicSeconds + " seconds" );
+		System.out.println( "Input file duration: " + musicDuration.toMinutesPart() + " minutes and " + musicDuration.toSecondsPart() + " seconds" );
 		System.out.println( "Target video resolution: " + width + "x" + height );
-		System.out.println( "Render and encoding took: " + duration.toMinutesPart() + " minutes and " + duration.toSecondsPart() + " seconds" );
-		System.out.println( "Render and encoding was " + NUMBER_FORMAT.format( (double)musicSeconds / (double)duration.getSeconds() ) + " of real time" );
+		System.out.println( "Render and encoding took: " + renderDuration.toMinutesPart() + " minutes and " + renderDuration.toSecondsPart() + " seconds" );
+		System.out.println( "Render and encoding was " + NUMBER_FORMAT.format( renderRatio ) + " of real time" );
 
 		// Clean up
 		for( String fileName : fileNameList ) {
