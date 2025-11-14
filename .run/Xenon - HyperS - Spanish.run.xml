@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Xenon - HyperSynes" type="Application" factoryName="Application">
+  <configuration default="false" name="Xenon - HyperS - Spanish" type="Application" factoryName="Application">
     <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
     <option name="MAIN_CLASS_NAME" value="com.avereon.xenon.Launcher" />
     <module name="hypersynesthesia" />

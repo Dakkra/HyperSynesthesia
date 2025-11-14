@@ -10,6 +10,7 @@ import com.avereon.zerra.Option;
 import com.avereon.zerra.javafx.Fx;
 import com.dakkra.hypersynesthesia.ffmpeg.MusicFile;
 import com.dakkra.hypersynesthesia.ffmpeg.ProjectProcessor;
+import com.dakkra.hypersynesthesia.ffmpeg.Renderer;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -115,10 +116,6 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		barPaint = new ColorPicker( DEFAULT_BAR_COLOR );
 
 		executeButton = new Button( Rb.text( getProduct(), BUNDLE, "generate" ) );
-		GridPane.setHgrow( executeButton, javafx.scene.layout.Priority.ALWAYS );
-		executeButton.setMaxWidth( Double.MAX_VALUE );
-		executeButton.setDisable( true );
-
 		videoProgressBar = new ProgressBar( 0 );
 		videoFrames = new TextField();
 		videoResolution = new TextField();
@@ -135,7 +132,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		grid.add( createBackgroundOptionsPane(), 1, 1, 1, 1 );
 		grid.add( createTargetVideoPane(), 0, 2, 1, 1 );
 		grid.add( createBarOptionsPane(), 1, 2, 1, 1 );
-		grid.add( executeButton, 0, 3, 2, 1 );
+		grid.add( createGenerateVideoPane(), 0, 3, 2, 1 );
 
 		getChildren().addAll( grid );
 
@@ -166,13 +163,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 					}
 				);
 
-				Duration audioDuration = Duration.ofSeconds( music.getDuration() );
-				String minutesAbbreviation = Rb.text( getProduct(), BUNDLE, "minutes-abbreviation" );
-				String secondsAbbreviation = Rb.text( getProduct(), BUNDLE, "seconds-abbreviation" );
-				String minutesText = audioDuration.toMinutes() + " " + minutesAbbreviation;
-				String secondsText = audioDuration.toSecondsPart() + " " + secondsAbbreviation;
-				String audioDurationText = minutesText + " " + secondsText;
-				Fx.run( () -> this.sourceAudioDuration.setText( audioDurationText ) );
+				Fx.run( () -> this.sourceAudioDuration.setText( formatDuration( music.getDuration() ) ) );
 				Fx.run( () -> this.sampleCount.setText( String.valueOf( music.getNumSamples() ) ) );
 				Fx.run( () -> this.fftCount.setText( String.valueOf( music.getFftQueue().size() ) ) );
 
@@ -197,11 +188,15 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private void execute() {
 		int width = Integer.parseInt( this.width.getText() );
 		int height = Integer.parseInt( this.height.getText() );
-
 		Path outputPath = Path.of( targetVideo.getText() );
+
+		Fx.run( () -> videoProgressBar.setProgress( ProgressIndicator.INDETERMINATE_PROGRESS ) );
+
 		Task<?> renderTask = Task.of(
 			"Render Video", () -> {
-				projectProcessor.renderVideoFile( music, width, height, outputPath );
+				Renderer renderer = projectProcessor.renderVideoFile( music, width, height, outputPath, progress -> {
+					Fx.run( () -> videoProgressBar.setProgress( progress ) );
+				} );
 
 				//			Triggering render
 				//			Rendering complete
@@ -212,9 +207,26 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 				//			Render and encoding took: 0 minutes and 11 seconds
 				//			Render and encoding was 754.55% of real time
 
+				double musicMillis = music.getDuration().toMillis();
+				double renderMillis = projectProcessor.getRenderDuration().toMillis();
+				double renderRatioValue = 100* (renderMillis / musicMillis);
+
+				Fx.run( () -> videoFrames.setText( String.valueOf( renderer.getFrameCount() ) ) );
+				Fx.run( () -> videoResolution.setText( width + "x" + height ) );
+				Fx.run( () -> this.renderDuration.setText( formatDuration( projectProcessor.getRenderDuration() ) ) );
+				Fx.run( () -> renderRatio.setText( Rb.text( getProduct(), BUNDLE, "render-ratio", renderRatioValue ) ) );
+				Fx.run( () -> videoProgressBar.setProgress( 1.0 ) );
 			}
 		);
 		getProgram().getTaskManager().submit( renderTask );
+	}
+
+	private String formatDuration( Duration duration ) {
+		String minutesAbbreviation = Rb.text( getProduct(), BUNDLE, "minutes-abbreviation" );
+		String secondsAbbreviation = Rb.text( getProduct(), BUNDLE, "seconds-abbreviation" );
+		String minutesText = duration.toMinutes() + " " + minutesAbbreviation;
+		String secondsText = duration.toSecondsPart() + " " + secondsAbbreviation;
+		return minutesText + " " + secondsText;
 	}
 
 	private TitledPane createAudioSourcePane() {
@@ -271,28 +283,29 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
 		Label widthLabel = new Label( Rb.text( getProduct(), BUNDLE, "video-width-prompt" ) );
-		Label heightLabel = new Label( Rb.text( getProduct(), BUNDLE, "video-height-prompt" ) );
-		Label frameRateLabel = new Label( Rb.text( getProduct(), BUNDLE, "video-frame-rate-prompt" ) );
-
-		grid.add( widthLabel, 0, 0 );
-		grid.add( width, 1, 0 );
-		grid.add( heightLabel, 0, 1 );
-		grid.add( height, 1, 1 );
-		grid.add( frameRateLabel, 0, 2 );
-		grid.add( frameRate, 1, 2 );
-
-		GridPane.setHgrow( widthLabel, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setHgrow( heightLabel, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setHgrow( frameRateLabel, javafx.scene.layout.Priority.ALWAYS );
-
+		GridPane.setHgrow( width, javafx.scene.layout.Priority.ALWAYS );
 		width.setAlignment( Pos.BASELINE_RIGHT );
 		width.setPromptText( String.valueOf( DEFAULT_WIDTH ) );
-
+		Label heightLabel = new Label( Rb.text( getProduct(), BUNDLE, "video-height-prompt" ) );
+		GridPane.setHgrow( height, javafx.scene.layout.Priority.ALWAYS );
 		height.setAlignment( Pos.BASELINE_RIGHT );
 		height.setPromptText( String.valueOf( DEFAULT_HEIGHT ) );
-
+		Label frameRateLabel = new Label( Rb.text( getProduct(), BUNDLE, "video-frame-rate-prompt" ) );
+		GridPane.setHgrow( frameRate, javafx.scene.layout.Priority.ALWAYS );
 		frameRate.setAlignment( Pos.BASELINE_RIGHT );
 		frameRate.setPromptText( String.valueOf( DEFAULT_FRAME_RATE ) );
+
+		int row = 0;
+		grid.add( widthLabel, 0, row, 1, 1 );
+		grid.add( width, 1, row, 1, 1 );
+
+		row++;
+		grid.add( heightLabel, 0, row, 1, 1 );
+		grid.add( height, 1, row, 1, 1 );
+
+		row++;
+		grid.add( frameRateLabel, 0, row, 1, 1 );
+		grid.add( frameRate, 1, row, 1, 1 );
 
 		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "video-properties-title" ), grid );
 		pane.setCollapsible( false );
@@ -306,22 +319,21 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
 		Label backgroundPaintPrompt = new Label( Rb.text( getProduct(), BUNDLE, "background-color-prompt" ) );
+		GridPane.setHgrow( backgroundPaint, javafx.scene.layout.Priority.ALWAYS );
+		backgroundPaint.setMaxWidth( Double.MAX_VALUE );
 		Label backgroundImagePrompt = new Label( Rb.text( getProduct(), BUNDLE, "background-image-prompt" ) );
-
+		GridPane.setHgrow( backgroundImage, javafx.scene.layout.Priority.ALWAYS );
 		Node fileIcon = getProgram().getIconLibrary().getIcon( "file" );
 		Button backgroundImageButton = new Button( null, fileIcon );
 
-		grid.add( backgroundPaintPrompt, 0, 1 );
-		grid.add( backgroundPaint, 1, 1 );
-		grid.add( backgroundImagePrompt, 0, 2 );
-		grid.add( backgroundImage, 1, 2 );
-		grid.add( backgroundImageButton, 2, 2 );
+		int row = 0;
+		grid.add( backgroundPaintPrompt, 0, row, 1, 1 );
+		grid.add( backgroundPaint, 1, row, 2, 1 );
 
-		GridPane.setHgrow( backgroundPaintPrompt, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setColumnSpan( backgroundPaint, 2 );
-		backgroundPaint.setMaxWidth( Double.MAX_VALUE );
-		GridPane.setHgrow( backgroundImagePrompt, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setHgrow( backgroundImage, javafx.scene.layout.Priority.ALWAYS );
+		row++;
+		grid.add( backgroundImagePrompt, 0, row, 1, 1 );
+		grid.add( backgroundImage, 1, row, 1, 1 );
+		grid.add( backgroundImageButton, 2, row, 1, 1 );
 
 		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "background-options-title" ), grid );
 		pane.setCollapsible( false );
@@ -335,32 +347,28 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
 		Label outputFormatPrompt = new Label( Rb.text( getProduct(), BUNDLE, "target-format-prompt" ) );
+		GridPane.setHgrow( outputFormat, javafx.scene.layout.Priority.ALWAYS );
+		outputFormat.setMaxWidth( Double.MAX_VALUE );
 		Label targetVideoPrompt = new Label( Rb.text( getProduct(), BUNDLE, "target-path-prompt" ) );
-
+		GridPane.setHgrow( targetVideo, javafx.scene.layout.Priority.ALWAYS );
 		Node targetVideoFileIcon = getProgram().getIconLibrary().getIcon( "file" );
 		Button targetVideoButton = new Button( null, targetVideoFileIcon );
 
 		int row = 0;
-		grid.add( targetVideoPrompt, 0, row );
-		grid.add( targetVideo, 1, row );
-		grid.add( targetVideoButton, 2, row );
+		grid.add( targetVideoPrompt, 0, row, 1, 1 );
+		grid.add( targetVideo, 1, row, 1, 1 );
+		grid.add( targetVideoButton, 2, row, 1, 1 );
 
 		row++;
-		grid.add( outputFormatPrompt, 0, row );
-		grid.add( outputFormat, 1, row );
-
-		GridPane.setHgrow( outputFormatPrompt, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setColumnSpan( outputFormat, 2 );
-		outputFormat.setMaxWidth( Double.MAX_VALUE );
-		GridPane.setHgrow( targetVideoPrompt, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setHgrow( targetVideo, javafx.scene.layout.Priority.ALWAYS );
+		grid.add( outputFormatPrompt, 0, row, 1, 1 );
+		grid.add( outputFormat, 1, row, 2, 1 );
 
 		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "target-path-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
 
-		targetVideoButton.setOnAction( event -> requestTargetVideoFile() );
+		targetVideoButton.setOnAction( _ -> requestTargetVideoFile() );
 
 		return pane;
 	}
@@ -369,20 +377,78 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
 		Label barStylePrompt = new Label( Rb.text( getProduct(), BUNDLE, "bar-style-prompt" ) );
-		Label barColorPrompt = new Label( Rb.text( getProduct(), BUNDLE, "bar-color-prompt" ) );
+		GridPane.setHgrow( barStyle, javafx.scene.layout.Priority.ALWAYS );
+		barStyle.setMaxWidth( Double.MAX_VALUE );
+		Label barPaintPrompt = new Label( Rb.text( getProduct(), BUNDLE, "bar-color-prompt" ) );
+		GridPane.setHgrow( barPaint, javafx.scene.layout.Priority.ALWAYS );
+		barPaint.setMaxWidth( Double.MAX_VALUE );
 
 		grid.add( barStylePrompt, 0, 0 );
 		grid.add( barStyle, 1, 0 );
-		grid.add( barColorPrompt, 0, 1 );
+		grid.add( barPaintPrompt, 0, 1 );
 		grid.add( barPaint, 1, 1 );
 
-		GridPane.setHgrow( barStylePrompt, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setHgrow( barColorPrompt, javafx.scene.layout.Priority.ALWAYS );
-
-		barStyle.setMaxWidth( Double.MAX_VALUE );
-		barPaint.setMaxWidth( Double.MAX_VALUE );
-
 		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "bar-customization-title" ), grid );
+		pane.setCollapsible( false );
+		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
+		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
+
+		return pane;
+	}
+
+	private TitledPane createGenerateVideoPane() {
+		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
+
+		GridPane.setHgrow( executeButton, javafx.scene.layout.Priority.ALWAYS );
+		executeButton.setMaxWidth( Double.MAX_VALUE );
+		executeButton.setDisable( true );
+
+		Label progressPrompt = new Label( Rb.text( getProduct(), BUNDLE, "generate-video-prompt" ) );
+		GridPane.setHgrow( videoProgressBar, javafx.scene.layout.Priority.ALWAYS );
+		videoProgressBar.setMaxWidth( Double.MAX_VALUE );
+
+		Label renderRatioPrompt = new Label( Rb.text( getProduct(), BUNDLE, "render-ratio-prompt" ) );
+		GridPane.setHgrow( renderRatio, javafx.scene.layout.Priority.ALWAYS );
+		renderRatio.setAlignment( Pos.BASELINE_LEFT );
+		renderRatio.setEditable( false );
+
+		Label videoFramePrompt = new Label( Rb.text( getProduct(), BUNDLE, "video-frames-prompt" ) );
+		GridPane.setHgrow( videoFrames, javafx.scene.layout.Priority.ALWAYS );
+		videoFrames.setAlignment( Pos.BASELINE_RIGHT );
+		videoFrames.setEditable( false );
+
+		Label videoResolutionPrompt = new Label( Rb.text( getProduct(), BUNDLE, "video-resolution-prompt" ) );
+		GridPane.setHgrow( videoResolution, javafx.scene.layout.Priority.ALWAYS );
+		videoResolution.setAlignment( Pos.BASELINE_RIGHT );
+		videoResolution.setEditable( false );
+
+		Label videoDurationPrompt = new Label( Rb.text( getProduct(), BUNDLE, "video-duration-prompt" ) );
+		GridPane.setHgrow( renderDuration, javafx.scene.layout.Priority.ALWAYS );
+		renderDuration.setAlignment( Pos.BASELINE_RIGHT );
+		renderDuration.setEditable( false );
+
+		int row = 0;
+		grid.add( executeButton, 0, row, 4, 1 );
+
+		row++;
+		grid.add( progressPrompt, 0, row, 1, 1 );
+		grid.add( videoProgressBar, 1, row, 3, 1 );
+
+		row++;
+		grid.add( renderRatioPrompt, 0, row, 1, 1 );
+		grid.add( renderRatio, 1, row, 3, 1 );
+
+		row++;
+		grid.add( videoFramePrompt, 0, row, 1, 1 );
+		grid.add( videoFrames, 1, row, 1, 1 );
+		grid.add( videoResolutionPrompt, 2, row, 1, 1 );
+		grid.add( videoResolution, 3, row, 1, 1 );
+
+		row++;
+		grid.add( videoDurationPrompt, 0, row, 1, 1 );
+		grid.add( renderDuration, 1, row, 1, 1 );
+
+		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "generate-video-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );

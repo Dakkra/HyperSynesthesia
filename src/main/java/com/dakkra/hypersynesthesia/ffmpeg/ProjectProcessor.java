@@ -6,6 +6,7 @@ import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
 import com.github.kokorin.jaffree.ffmpeg.UrlOutput;
 import lombok.CustomLog;
+import lombok.Getter;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -25,6 +26,9 @@ public class ProjectProcessor {
 	private static final DecimalFormat NUMBER_FORMAT = new DecimalFormat( "##.##%" );
 
 	private final Xenon program;
+
+	@Getter
+	private Duration renderDuration;
 
 	public ProjectProcessor( Xenon program ) {
 		this.program = program;
@@ -71,13 +75,16 @@ public class ProjectProcessor {
 		return music;
 	}
 
-	public void renderVideoFile( MusicFile music, int width, int height, Path outputFile ) {
+	public Renderer renderVideoFile( MusicFile music, int width, int height, Path outputFile ) {
+		return renderVideoFile( music, width, height, outputFile, _ -> {} );
+	}
 
+	public Renderer renderVideoFile( MusicFile music, int width, int height, Path outputFile, Consumer<Double> progressConsumer ) {
 		// NOTE Is this where the processing is split between loading and rendering?
 
 		System.out.println( "Triggering render" );
 		Vector<String> fileNameList = new Vector<>();
-		Renderer renderer = new Renderer( program, fileNameList, music, width, height );
+		Renderer renderer = new Renderer( program, fileNameList, music, width, height, progressConsumer );
 
 		long initialTime = Clock.systemUTC().millis();
 
@@ -100,8 +107,8 @@ public class ProjectProcessor {
 
 		long finalTime = Clock.systemUTC().millis();
 		long deltaTime = finalTime - initialTime;
-		Duration renderDuration = Duration.ofMillis( deltaTime );
-		Duration musicDuration = Duration.ofSeconds( music.getDuration() );
+		renderDuration = Duration.ofMillis( deltaTime );
+		Duration musicDuration = music.getDuration();
 		double renderRatio = (double)musicDuration.getSeconds() / (double)renderDuration.getSeconds();
 
 		System.out.println( "Input file duration: " + musicDuration.toMinutesPart() + " minutes and " + musicDuration.toSecondsPart() + " seconds" );
@@ -113,6 +120,8 @@ public class ProjectProcessor {
 		for( String fileName : fileNameList ) {
 			new File( fileName ).delete();
 		}
+
+		return renderer;
 	}
 
 }

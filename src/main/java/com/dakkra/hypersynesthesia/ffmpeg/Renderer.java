@@ -3,6 +3,7 @@ package com.dakkra.hypersynesthesia.ffmpeg;
 import com.avereon.xenon.Xenon;
 import com.avereon.xenon.task.Task;
 import lombok.CustomLog;
+import lombok.Getter;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -11,15 +12,16 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Queue;
 import java.util.*;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.function.Consumer;
 
 @CustomLog
-class Renderer {
+public class Renderer {
 
 	public BufferedImage art;
 
@@ -41,7 +43,12 @@ class Renderer {
 
 	private Queue<ArrayList<Double>> spectrumsQueue;
 
-	Renderer( Xenon program, Vector<String> nameList, MusicFile music, int frameWidth, int frameHeight ) {
+	private final Consumer<Double> progressConsumer;
+
+	@Getter
+	private int frameCount;
+
+	Renderer( Xenon program, Vector<String> nameList, MusicFile music, int frameWidth, int frameHeight, Consumer<Double> progressConsumer ) {
 		this.program = program;
 		this.nameList = nameList;
 		this.music = music;
@@ -49,6 +56,7 @@ class Renderer {
 		this.frameHeight = frameHeight;
 		this.spectralQueue = music.getFftQueue();
 		this.rmsQueue = new ArrayBlockingQueue<>( AVG_QUEUE_SIZE );
+		this.progressConsumer = progressConsumer;
 
 		try {
 			art = ImageIO.read( Objects.requireNonNull( this.getClass().getResourceAsStream( "/hs-logo.png" ) ) );
@@ -101,8 +109,9 @@ class Renderer {
 	}
 
 	public void run() {
-		final int audioBufferSize = (int)(music.getSampleRate() / 60);
+		final int audioBufferSize = music.getSampleRate() / 60;
 		final int numFrames = spectralQueue.size();
+		frameCount = numFrames;
 		Vector<Future<?>> futures = new Vector<>();
 		for( int counter = 0; counter < numFrames; counter++ ) {
 			DSP dsp = new DSP();
@@ -110,7 +119,7 @@ class Renderer {
 			if( delta <= 0 ) {
 				return;
 			}
-			int[] samplesAvg = music.getSamplesAvg().subList( (int)counter * audioBufferSize, (int)counter * audioBufferSize + delta ).stream().mapToInt( i -> i ).toArray();
+			int[] samplesAvg = music.getSamplesAvg().subList( counter * audioBufferSize, counter * audioBufferSize + delta ).stream().mapToInt( i -> i ).toArray();
 			dsp.processLight( samplesAvg );
 
 			// Smooth RMS
@@ -155,9 +164,11 @@ class Renderer {
 			} ) );
 			futures.add( future );
 		}
+		int count = 0;
 		for( Future<?> future : futures ) {
 			try {
 				future.get();
+				this.progressConsumer.accept( (double)++count / (double)numFrames );
 			} catch( InterruptedException | ExecutionException e ) {
 				log.atError().withCause( e ).log( "Failed to render frame" );
 			}
