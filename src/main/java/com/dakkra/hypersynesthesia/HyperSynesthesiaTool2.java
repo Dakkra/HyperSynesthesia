@@ -23,6 +23,7 @@ import javafx.stage.FileChooser;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 
 public class HyperSynesthesiaTool2 extends GuidedTool {
 
@@ -165,7 +166,13 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 					}
 				);
 
-				Fx.run( () -> this.sourceAudioDuration.setText( String.valueOf( music.getDuration() ) ) );
+				Duration audioDuration = Duration.ofSeconds( music.getDuration() );
+				String minutesAbbreviation = Rb.text( getProduct(), BUNDLE, "minutes-abbreviation" );
+				String secondsAbbreviation = Rb.text( getProduct(), BUNDLE, "seconds-abbreviation" );
+				String minutesText = audioDuration.toMinutes() + " " + minutesAbbreviation;
+				String secondsText = audioDuration.toSecondsPart() + " " + secondsAbbreviation;
+				String audioDurationText = minutesText + " " + secondsText;
+				Fx.run( () -> this.sourceAudioDuration.setText( audioDurationText ) );
 				Fx.run( () -> this.sampleCount.setText( String.valueOf( music.getNumSamples() ) ) );
 				Fx.run( () -> this.fftCount.setText( String.valueOf( music.getFftQueue().size() ) ) );
 
@@ -217,33 +224,38 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		Label sourceAudioPrompt = new Label( Rb.text( getProduct(), BUNDLE, "source-path-prompt" ) );
 		Node sourceAudioFileIcon = getProgram().getIconLibrary().getIcon( "file" );
 		Button sourceAudioButton = new Button( null, sourceAudioFileIcon );
+		GridPane.setHgrow( sourceAudio, javafx.scene.layout.Priority.ALWAYS );
 		grid.add( sourceAudioPrompt, 0, row, 1, 1 );
 		grid.add( sourceAudio, 1, row, 3, 1 );
 		grid.add( sourceAudioButton, 4, row, 1, 1 );
 
 		row++;
 		Label audioProgressPrompt = new Label( Rb.text( getProduct(), BUNDLE, "generate-spectrum-prompt" ) );
+		audioProgressBar.setMaxWidth( Double.MAX_VALUE );
 		grid.add( audioProgressPrompt, 0, row, 1, 1 );
 		grid.add( audioProgressBar, 1, row, 3, 1 );
-		audioProgressBar.setMaxWidth( Double.MAX_VALUE );
 
 		row++;
 		Label sampleCountPrompt = new Label( Rb.text( getProduct(), BUNDLE, "sample-count-prompt" ) );
+		sampleCount.setAlignment( Pos.BASELINE_RIGHT );
+		sampleCount.setEditable( false );
+		GridPane.setHgrow( sampleCount, javafx.scene.layout.Priority.ALWAYS );
 		Label fftCountPrompt = new Label( Rb.text( getProduct(), BUNDLE, "fft-count-prompt" ) );
+		GridPane.setHgrow( fftCount, javafx.scene.layout.Priority.ALWAYS );
+		fftCount.setAlignment( Pos.BASELINE_RIGHT );
+		fftCount.setEditable( false );
 		grid.add( sampleCountPrompt, 0, row, 1, 1 );
 		grid.add( sampleCount, 1, row, 1, 1 );
 		grid.add( fftCountPrompt, 2, row, 1, 1 );
 		grid.add( fftCount, 3, row, 1, 1 );
 
-		sampleCount.setAlignment( Pos.BASELINE_RIGHT );
-		sampleCount.setEditable( false );
-		fftCount.setAlignment( Pos.BASELINE_RIGHT );
-		fftCount.setEditable( false );
-
-		//GridPane.setHgrow( sourceAudioPrompt, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setHgrow( sourceAudio, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setHgrow( sampleCount, javafx.scene.layout.Priority.ALWAYS );
-		GridPane.setHgrow( fftCount, javafx.scene.layout.Priority.ALWAYS );
+		row++;
+		Label sourceAudioDurationPrompt = new Label( Rb.text( getProduct(), BUNDLE, "source-audio-duration-prompt" ) );
+		GridPane.setHgrow( sourceAudioDuration, javafx.scene.layout.Priority.ALWAYS );
+		sourceAudioDuration.setAlignment( Pos.BASELINE_RIGHT );
+		sourceAudioDuration.setEditable( false );
+		grid.add( sourceAudioDurationPrompt, 0, row, 1, 1 );
+		grid.add( sourceAudioDuration, 1, row, 1, 1 );
 
 		sourceAudioButton.setOnAction( event -> requestSourceAudioFile() );
 
