@@ -29,6 +29,8 @@ public class MusicFile {
 
 	private Duration duration;
 
+	// FIXME This is modified in the rendering process
+	// This is loaded by ProjectProcessor.loadMusicFile()
 	private PriorityBlockingQueue<PrioritySpectrum> fftQueue;
 
 	public MusicFile( Path file ) {

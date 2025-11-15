@@ -8,9 +8,10 @@ import com.avereon.xenon.task.Task;
 import com.avereon.xenon.tool.guide.GuidedTool;
 import com.avereon.zerra.Option;
 import com.avereon.zerra.javafx.Fx;
+import com.dakkra.hypersynesthesia.ffmpeg.FrameRenderer;
 import com.dakkra.hypersynesthesia.ffmpeg.MusicFile;
 import com.dakkra.hypersynesthesia.ffmpeg.ProjectProcessor;
-import com.dakkra.hypersynesthesia.ffmpeg.Renderer;
+import com.dakkra.hypersynesthesia.ffmpeg.RenderSettings;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -61,7 +62,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private final TextField frameRate;
 
 	// Background options
-	private final ColorPicker backgroundPaint;
+	private final ColorPicker backgroundColor;
 
 	private final TextField backgroundImage;
 
@@ -73,7 +74,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	// Bar options
 	private final ComboBox<Option<BarStyle>> barStyle;
 
-	private final ColorPicker barPaint;
+	private final ColorPicker barColor;
 
 	private final Button executeButton;
 
@@ -85,14 +86,14 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 	private final TextField renderDuration;
 
-	private final TextField renderRatio;
+	private final TextField renderEfficiency;
 
 	private MusicFile music;
 
 	public HyperSynesthesiaTool2( XenonProgramProduct product, Resource resource ) {
 		super( product, resource );
 
-		projectProcessor = new ProjectProcessor( product.getProgram() );
+		projectProcessor = new ProjectProcessor( product );
 
 		sourceAudio = new TextField();
 		sourceAudioDuration = new TextField();
@@ -104,7 +105,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		height = new TextField( String.valueOf( DEFAULT_HEIGHT ) );
 		frameRate = new TextField( String.valueOf( DEFAULT_FRAME_RATE ) );
 
-		backgroundPaint = new ColorPicker( DEFAULT_BACKGROUND_COLOR );
+		backgroundColor = new ColorPicker( DEFAULT_BACKGROUND_COLOR );
 		backgroundImage = new TextField();
 
 		outputFormat = new ComboBox<>( FXCollections.observableList( Option.of( product, BUNDLE, OutputFormat.values() ) ) );
@@ -113,14 +114,14 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 		barStyle = new ComboBox<>( FXCollections.observableList( Option.of( product, BUNDLE, BarStyle.values() ) ) );
 		barStyle.getSelectionModel().selectFirst();
-		barPaint = new ColorPicker( DEFAULT_BAR_COLOR );
+		barColor = new ColorPicker( DEFAULT_BAR_COLOR );
 
 		executeButton = new Button( Rb.text( getProduct(), BUNDLE, "generate" ) );
 		videoProgressBar = new ProgressBar( 0 );
 		videoFrames = new TextField();
 		videoResolution = new TextField();
 		renderDuration = new TextField();
-		renderRatio = new TextField();
+		renderEfficiency = new TextField();
 
 		GridPane grid = new GridPane();
 		StackPane.setMargin( grid, new Insets( 10 ) );
@@ -188,34 +189,54 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	private void execute() {
 		int width = Integer.parseInt( this.width.getText() );
 		int height = Integer.parseInt( this.height.getText() );
-		Path outputPath = Path.of( targetVideo.getText() );
+		int frameRate = Integer.parseInt( this.frameRate.getText() );
+		Color backgroundPaint = this.backgroundColor.getValue();
+		Path backgroundImage = Path.of( this.backgroundImage.getText() );
+		BarStyle barStyle = this.barStyle.getSelectionModel().getSelectedItem().key();
+		Color barPaint = this.barColor.getValue();
 
-		Fx.run( () -> videoProgressBar.setProgress( ProgressIndicator.INDETERMINATE_PROGRESS ) );
+		Path outputPath = Path.of( this.targetVideo.getText() );
+		OutputFormat outputFormat = this.outputFormat.getSelectionModel().getSelectedItem().key();
 
+		Fx.run( () -> {
+			videoProgressBar.setProgress( ProgressIndicator.INDETERMINATE_PROGRESS );
+			renderEfficiency.setText( null );
+			videoFrames.setText( null );
+			videoResolution.setText( null );
+			renderDuration.setText( null );
+		} );
+
+		String taskName = Rb.text( getProduct(), BUNDLE, "generate-video-title" );
 		Task<?> renderTask = Task.of(
-			"Render Video", () -> {
-				Renderer renderer = projectProcessor.renderVideoFile( music, width, height, outputPath, progress -> {
-					Fx.run( () -> videoProgressBar.setProgress( progress ) );
-				} );
-
-				//			Triggering render
-				//			Rendering complete
-				//			Rendered 5009 frames
-				//			Encoding video
-				//			Input file duration: 83 seconds
-				//			Target video resolution: 1920x1080
-				//			Render and encoding took: 0 minutes and 11 seconds
-				//			Render and encoding was 754.55% of real time
+			taskName, () -> {
+				RenderSettings settings = new RenderSettings()
+					.width( width )
+					.height( height )
+					.frameRate( frameRate )
+					.backgroundColor( backgroundPaint )
+					.backgroundImage( backgroundImage )
+					.barStyle( barStyle )
+					.barColor( barPaint )
+					.targetPath( outputPath )
+					.outputFormat( outputFormat );
+				FrameRenderer frameRenderer = projectProcessor.renderVideoFile(
+					music,
+					settings,
+					progress -> Fx.run( () -> videoProgressBar.setProgress( progress ) ),
+					message -> Fx.run( () -> renderEfficiency.setText( message ) )
+				);
 
 				double musicMillis = music.getDuration().toMillis();
 				double renderMillis = projectProcessor.getRenderDuration().toMillis();
-				double renderRatioValue = 100* (renderMillis / musicMillis);
+				double renderRatioValue = 100 * (renderMillis / musicMillis);
 
-				Fx.run( () -> videoFrames.setText( String.valueOf( renderer.getFrameCount() ) ) );
-				Fx.run( () -> videoResolution.setText( width + "x" + height ) );
-				Fx.run( () -> this.renderDuration.setText( formatDuration( projectProcessor.getRenderDuration() ) ) );
-				Fx.run( () -> renderRatio.setText( Rb.text( getProduct(), BUNDLE, "render-ratio", renderRatioValue ) ) );
-				Fx.run( () -> videoProgressBar.setProgress( 1.0 ) );
+				Fx.run( () -> {
+					videoProgressBar.setProgress( 1.0 );
+					renderEfficiency.setText( Rb.text( getProduct(), BUNDLE, "render-ratio", renderRatioValue ) );
+					videoFrames.setText( String.valueOf( frameRenderer.getFrameCount() ) );
+					videoResolution.setText( width + "x" + height );
+					this.renderDuration.setText( formatDuration( projectProcessor.getRenderDuration() ) );
+				} );
 			}
 		);
 		getProgram().getTaskManager().submit( renderTask );
@@ -319,8 +340,8 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane grid = new GridPane( UiFactory.PAD, UiFactory.PAD );
 
 		Label backgroundPaintPrompt = new Label( Rb.text( getProduct(), BUNDLE, "background-color-prompt" ) );
-		GridPane.setHgrow( backgroundPaint, javafx.scene.layout.Priority.ALWAYS );
-		backgroundPaint.setMaxWidth( Double.MAX_VALUE );
+		GridPane.setHgrow( backgroundColor, javafx.scene.layout.Priority.ALWAYS );
+		backgroundColor.setMaxWidth( Double.MAX_VALUE );
 		Label backgroundImagePrompt = new Label( Rb.text( getProduct(), BUNDLE, "background-image-prompt" ) );
 		GridPane.setHgrow( backgroundImage, javafx.scene.layout.Priority.ALWAYS );
 		Node fileIcon = getProgram().getIconLibrary().getIcon( "file" );
@@ -328,7 +349,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 		int row = 0;
 		grid.add( backgroundPaintPrompt, 0, row, 1, 1 );
-		grid.add( backgroundPaint, 1, row, 2, 1 );
+		grid.add( backgroundColor, 1, row, 2, 1 );
 
 		row++;
 		grid.add( backgroundImagePrompt, 0, row, 1, 1 );
@@ -380,13 +401,13 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane.setHgrow( barStyle, javafx.scene.layout.Priority.ALWAYS );
 		barStyle.setMaxWidth( Double.MAX_VALUE );
 		Label barPaintPrompt = new Label( Rb.text( getProduct(), BUNDLE, "bar-color-prompt" ) );
-		GridPane.setHgrow( barPaint, javafx.scene.layout.Priority.ALWAYS );
-		barPaint.setMaxWidth( Double.MAX_VALUE );
+		GridPane.setHgrow( barColor, javafx.scene.layout.Priority.ALWAYS );
+		barColor.setMaxWidth( Double.MAX_VALUE );
 
 		grid.add( barStylePrompt, 0, 0 );
 		grid.add( barStyle, 1, 0 );
 		grid.add( barPaintPrompt, 0, 1 );
-		grid.add( barPaint, 1, 1 );
+		grid.add( barColor, 1, 1 );
 
 		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "bar-customization-title" ), grid );
 		pane.setCollapsible( false );
@@ -408,9 +429,9 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		videoProgressBar.setMaxWidth( Double.MAX_VALUE );
 
 		Label renderRatioPrompt = new Label( Rb.text( getProduct(), BUNDLE, "render-ratio-prompt" ) );
-		GridPane.setHgrow( renderRatio, javafx.scene.layout.Priority.ALWAYS );
-		renderRatio.setAlignment( Pos.BASELINE_LEFT );
-		renderRatio.setEditable( false );
+		GridPane.setHgrow( renderEfficiency, javafx.scene.layout.Priority.ALWAYS );
+		renderEfficiency.setAlignment( Pos.BASELINE_LEFT );
+		renderEfficiency.setEditable( false );
 
 		Label videoFramePrompt = new Label( Rb.text( getProduct(), BUNDLE, "video-frames-prompt" ) );
 		GridPane.setHgrow( videoFrames, javafx.scene.layout.Priority.ALWAYS );
@@ -436,7 +457,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 		row++;
 		grid.add( renderRatioPrompt, 0, row, 1, 1 );
-		grid.add( renderRatio, 1, row, 3, 1 );
+		grid.add( renderEfficiency, 1, row, 3, 1 );
 
 		row++;
 		grid.add( videoFramePrompt, 0, row, 1, 1 );

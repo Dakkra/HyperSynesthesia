@@ -10,6 +10,7 @@ module com.dakkra.hypersynthesthesia {
 	requires org.slf4j;
 	requires org.jspecify;
 	requires javafx.graphics;
+	requires com.avereon.zevra;
 
 	exports com.dakkra.hypersynesthesia to com.avereon.xenon;
 

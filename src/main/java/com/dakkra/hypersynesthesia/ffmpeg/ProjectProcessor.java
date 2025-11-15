@@ -1,6 +1,7 @@
 package com.dakkra.hypersynesthesia.ffmpeg;
 
-import com.avereon.xenon.Xenon;
+import com.avereon.product.Rb;
+import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.task.Task;
 import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
@@ -9,6 +10,8 @@ import lombok.CustomLog;
 import lombok.Getter;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.Clock;
@@ -25,13 +28,13 @@ public class ProjectProcessor {
 
 	private static final DecimalFormat NUMBER_FORMAT = new DecimalFormat( "##.##%" );
 
-	private final Xenon program;
+	private final XenonProgramProduct product;
 
 	@Getter
 	private Duration renderDuration;
 
-	public ProjectProcessor( Xenon program ) {
-		this.program = program;
+	public ProjectProcessor( XenonProgramProduct product ) {
+		this.product = product;
 	}
 
 	public MusicFile loadMusicFile( Path inputFile ) {
@@ -49,9 +52,9 @@ public class ProjectProcessor {
 		int numFFTs = (int)(music.getNumSamples() / (music.getSampleRate() / 60.0));
 		for( int frameIdx = 0; frameIdx <= numFFTs; frameIdx++ ) {
 			int index = frameIdx;
-			int audioBufferSize = (int)(music.getSampleRate() / 60);
+			int audioBufferSize = music.getSampleRate() / 60;
 			int delta = Math.min( audioBufferSize, music.getSamplesAvg().size() - frameIdx * audioBufferSize );
-			Future<?> result = program.getTaskManager().submit( Task.of( () -> {
+			Future<?> result = product.getProgram().getTaskManager().submit( Task.of( () -> {
 				int[] samplesAvg = music.getSamplesAvg().subList( index * audioBufferSize, index * audioBufferSize + delta ).stream().mapToInt( i -> i ).toArray();
 				DSP dsp = new DSP();
 				dsp.processFull( samplesAvg );
@@ -75,35 +78,38 @@ public class ProjectProcessor {
 		return music;
 	}
 
-	public Renderer renderVideoFile( MusicFile music, int width, int height, Path outputFile ) {
-		return renderVideoFile( music, width, height, outputFile, _ -> {} );
-	}
-
-	public Renderer renderVideoFile( MusicFile music, int width, int height, Path outputFile, Consumer<Double> progressConsumer ) {
+	public FrameRenderer renderVideoFile( MusicFile music, RenderSettings settings, Consumer<Double> progressConsumer, Consumer<String> messageConsumer ) {
 		// NOTE Is this where the processing is split between loading and rendering?
 
-		System.out.println( "Triggering render" );
+		System.out.println( "Frame rendering..." );
 		Vector<String> fileNameList = new Vector<>();
-		Renderer renderer = new Renderer( program, fileNameList, music, width, height, progressConsumer );
+		FrameRenderer frameRenderer = new FrameRenderer( product.getProgram(), fileNameList, music, settings, progressConsumer );
 
 		long initialTime = Clock.systemUTC().millis();
 
 		// Render
-		renderer.run();
+		frameRenderer.run();
 
-		System.out.println( "Rendering complete" );
-		System.out.println( "Rendered " + fileNameList.size() + " frames" );
-		System.out.println( "Encoding video" );
+		System.out.println( "Frame rendering complete" );
+		System.out.println( "Rendered " + frameRenderer.getFrameCount() + " frames" );
 
 		// Encode video
+		System.out.println( "Encoding video..." );
+		messageConsumer.accept( Rb.text( product, "tool", "encoding-video" ) );
+		try {
+			Files.delete(  settings.targetPath() );
+		} catch( IOException exception ) {
+			throw new RuntimeException( exception );
+		}
 		FFmpeg
 			.atPath()
 			.addInput( UrlInput.fromPath( music.getFile() ) )
-			.addOutput( UrlOutput.toPath( outputFile ) )
+			.addOutput( UrlOutput.toPath( settings.targetPath() ) )
 			.addArguments( "-framerate", "60" )
 			.addArguments( "-i", "output%d.jpg" )
 			.addArguments( "-crf", "15" )
 			.execute();
+		System.out.println( "Video encoding complete" );
 
 		long finalTime = Clock.systemUTC().millis();
 		long deltaTime = finalTime - initialTime;
@@ -112,7 +118,7 @@ public class ProjectProcessor {
 		double renderRatio = (double)musicDuration.getSeconds() / (double)renderDuration.getSeconds();
 
 		System.out.println( "Input file duration: " + musicDuration.toMinutesPart() + " minutes and " + musicDuration.toSecondsPart() + " seconds" );
-		System.out.println( "Target video resolution: " + width + "x" + height );
+		System.out.println( "Target video resolution: " + settings.width() + "x" + settings.height() );
 		System.out.println( "Render and encoding took: " + renderDuration.toMinutesPart() + " minutes and " + renderDuration.toSecondsPart() + " seconds" );
 		System.out.println( "Render and encoding was " + NUMBER_FORMAT.format( renderRatio ) + " of real time" );
 
@@ -121,7 +127,7 @@ public class ProjectProcessor {
 			new File( fileName ).delete();
 		}
 
-		return renderer;
+		return frameRenderer;
 	}
 
 }

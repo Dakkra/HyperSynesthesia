@@ -6,6 +6,7 @@ import com.avereon.xenon.task.Task;
 import com.avereon.xenon.tool.guide.GuidedTool;
 import com.dakkra.hypersynesthesia.ffmpeg.MusicFile;
 import com.dakkra.hypersynesthesia.ffmpeg.ProjectProcessor;
+import com.dakkra.hypersynesthesia.ffmpeg.RenderSettings;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -70,7 +71,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 	public HyperSynesthesiaTool( XenonProgramProduct product, Resource resource ) {
 		super( product, resource );
 
-		this.projectProcessor = new ProjectProcessor( product.getProgram() );
+		this.projectProcessor = new ProjectProcessor( product);
 
 		frameBuffer = new LinkedBlockingQueue<>( 100 );
 
@@ -202,7 +203,8 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Videos" ) );
 		Path outputFile = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() ).toPath();
 
-		Task<?> renderTask = Task.of( "Render Video", () -> projectProcessor.renderVideoFile( music, width, height, outputFile ) );
+		RenderSettings settings = new RenderSettings().width( width ).height( height ).targetPath( outputFile );
+		Task<?> renderTask = Task.of( "Render Video", () -> projectProcessor.renderVideoFile( music, settings, _ -> {}, _ ->{} ) );
 		getProgram().getTaskManager().submit( renderTask );
 
 		// TODO Update actions
