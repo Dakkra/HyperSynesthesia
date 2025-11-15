@@ -20,6 +20,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
 import java.io.File;
@@ -182,11 +183,19 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		getProgram().getTaskManager().submit( loadTask );
 	}
 
-	private void requestTargetVideoFile() {
-		FileChooser fileChooser = new FileChooser();
-		fileChooser.setTitle( Rb.text( getProduct(), BUNDLE, "target-path-title" ) );
-		fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Videos" ) );
-		File outputFile = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
+	private void requestTargetVideoPath() {
+		File outputFile;
+		if( outputFormat.getSelectionModel().getSelectedItem().key() == OutputFormat.FRAME_SEQUENCE ) {
+			DirectoryChooser fileChooser = new DirectoryChooser();
+			fileChooser.setTitle( Rb.text( getProduct(), BUNDLE, "target-path-title" ) );
+			fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Videos" ) );
+			outputFile = fileChooser.showDialog( getProgram().getWorkspaceManager().getActiveStage() );
+		} else {
+			FileChooser fileChooser = new FileChooser();
+			fileChooser.setTitle( Rb.text( getProduct(), BUNDLE, "target-path-title" ) );
+			fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Videos" ) );
+			outputFile = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() );
+		}
 		if( outputFile == null ) return;
 
 		targetVideo.setText( outputFile.toString() );
@@ -217,6 +226,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		Task<?> renderTask = Task.of(
 			taskName, () -> {
 				RenderSettings settings = new RenderSettings()
+					.sourcePath( Path.of( this.sourceAudio.getText() ) )
 					.width( width )
 					.height( height )
 					.frameRate( frameRate )
@@ -385,20 +395,20 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		Button targetVideoButton = new Button( null, targetVideoFileIcon );
 
 		int row = 0;
+		grid.add( outputFormatPrompt, 0, row, 1, 1 );
+		grid.add( outputFormat, 1, row, 2, 1 );
+
+		row++;
 		grid.add( targetVideoPrompt, 0, row, 1, 1 );
 		grid.add( targetVideo, 1, row, 1, 1 );
 		grid.add( targetVideoButton, 2, row, 1, 1 );
-
-		row++;
-		grid.add( outputFormatPrompt, 0, row, 1, 1 );
-		grid.add( outputFormat, 1, row, 2, 1 );
 
 		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "target-path-title" ), grid );
 		pane.setCollapsible( false );
 		GridPane.setValignment( pane, javafx.geometry.VPos.TOP );
 		GridPane.setHgrow( pane, javafx.scene.layout.Priority.ALWAYS );
 
-		targetVideoButton.setOnAction( _ -> requestTargetVideoFile() );
+		targetVideoButton.setOnAction( _ -> requestTargetVideoPath() );
 
 		return pane;
 	}
@@ -490,10 +500,10 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		String sourceText = sourceAudio.getText();
 		String targetText = targetVideo.getText();
 
-		boolean sourceExists = !sourceText.isBlank() && Files.exists( Path.of( sourceText ) );
-		boolean targetExists = !targetText.isBlank() && Files.exists( Path.of( targetText ) );
+		boolean sourceValid = !sourceText.isBlank() && Files.exists( Path.of( sourceText ) );
+		boolean targetValid = !targetText.isBlank();
 
-		executeButton.setDisable( !sourceExists || !targetExists );
+		executeButton.setDisable( !sourceValid || !targetValid );
 	}
 
 }

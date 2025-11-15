@@ -1,7 +1,9 @@
 package com.dakkra.hypersynesthesia.ffmpeg;
 
+import com.avereon.util.FileUtil;
 import com.avereon.xenon.Xenon;
 import com.avereon.xenon.task.Task;
+import com.dakkra.hypersynesthesia.OutputFormat;
 import lombok.CustomLog;
 import lombok.Getter;
 
@@ -10,10 +12,12 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -29,7 +33,7 @@ public class FrameRenderer {
 
 	private final Xenon program;
 
-	private final Vector<String> nameList;
+	private final List<Path> nameList;
 
 	private final MusicFile music;
 
@@ -46,7 +50,7 @@ public class FrameRenderer {
 	@Getter
 	private int frameCount;
 
-	FrameRenderer( Xenon program, Vector<String> nameList, MusicFile music, RenderSettings renderSettings, Consumer<Double> progressConsumer ) {
+	FrameRenderer( Xenon program, List<Path> nameList, MusicFile music, RenderSettings renderSettings, Consumer<Double> progressConsumer ) {
 		this.program = program;
 		this.nameList = nameList;
 		this.music = music;
@@ -82,6 +86,29 @@ public class FrameRenderer {
 		// Reinitialize the RMS queue
 		rmsQueue.clear();
 		IntStream.of( AVG_QUEUE_SIZE ).forEach( _ -> rmsQueue.add( 0.0 ) );
+
+		// Determine the target frame path
+		Path targetPath = settings.targetPath();
+		OutputFormat format = settings.outputFormat();
+		if( format == OutputFormat.MP4 ) {
+			if( !targetPath.getFileName().toString().endsWith( ".mp4" ) ) {
+				targetPath = targetPath.resolveSibling( targetPath.getFileName() + ".mp4" );
+			}
+			try {
+				Files.createDirectories( targetPath.getParent() );
+			} catch( IOException exception ) {
+				throw new RuntimeException( exception );
+			}
+		} else {
+			try {
+				Files.createDirectories( targetPath );
+			} catch( IOException exception ) {
+				throw new RuntimeException( exception );
+			}
+		}
+
+		// Determine the frame prefix from the source audio name
+		String framePrefix = FileUtil.removeExtension( settings.sourcePath().getFileName().toString() );
 
 		System.out.println( "Rendering frames: " + numFrames );
 		for( int counter = 0; counter < numFrames; counter++ ) {
@@ -125,10 +152,12 @@ public class FrameRenderer {
 
 			int index = counter;
 
+			final Path finalTargetPath = targetPath;
 			Future<?> future = program.getTaskManager().submit( Task.of( () -> {
+				Path file = finalTargetPath.resolve( framePrefix + index + ".jpg" );
 				try {
-					ImageIO.write( renderFrame( index, settings, background, loudnessAvg, new ArrayList<>( spectrumAvg ) ).internalImage(), "jpg", new File( "output" + index + ".jpg" ) );
-					nameList.add( "output" + index + ".jpg" );
+					ImageIO.write( renderFrame( index, settings, background, loudnessAvg, new ArrayList<>( spectrumAvg ) ).internalImage(), "jpg", file.toFile() );
+					nameList.add( file.getFileName() );
 				} catch( IOException e ) {
 					e.printStackTrace( System.err );
 					throw new RuntimeException( e );
@@ -166,13 +195,17 @@ public class FrameRenderer {
 		// Set rendering hints
 		graphics.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
 
+		// Bar color
+		java.awt.Color barColor = asAwtColor( settings.barColor() );
+
 		// Render spectrum
 		double barWidth = (double)frameWidth / (double)spectrum.size();
-		double barHeight = (double)frameHeight / 2.0;
+		double barCenter = (double)frameHeight / 2.0;
 		for( int i = 0; i < spectrum.size(); i++ ) {
 			double x = barWidth * i;
-			graphics.setColor( ColorUtil.colorWithIntensity( new Color( 140, 239, 137 ), spectrum.get( i ) ) );
-			graphics.fillRect( (int)x, (int)barHeight, (int)barWidth, (int)(barHeight * spectrum.get( i )) );
+			double barHeight = spectrum.get( i ) * (frameHeight / 2.0);
+			graphics.setColor( ColorUtil.colorWithIntensity( barColor, spectrum.get( i ) ) );
+			graphics.fillRect( (int)x, (int)(barCenter - (0.5 * barHeight)), (int)barWidth, (int)(barCenter * spectrum.get( i )) );
 		}
 
 		return new IndexedImage( frame, frameIndex );
