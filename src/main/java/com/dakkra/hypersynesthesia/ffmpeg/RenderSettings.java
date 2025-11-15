@@ -12,6 +12,8 @@ import java.nio.file.Path;
 @Accessors( fluent = true )
 public class RenderSettings {
 
+	private String prefix;
+
 	private Path sourcePath;
 
 	private int width;

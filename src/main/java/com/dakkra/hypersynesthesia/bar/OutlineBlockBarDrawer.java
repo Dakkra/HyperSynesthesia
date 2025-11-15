@@ -22,15 +22,11 @@ import java.awt.*;
 
 public class OutlineBlockBarDrawer extends BarDrawer {
 
-	public OutlineBlockBarDrawer( Graphics2D g, int half, int barWidth ) {
-		super( g, half, barWidth );
-	}
-
 	@Override
-	public void drawBar( int height, int x ) {
+	public void drawBar( Graphics2D g, int width, int height, int x, int half ) {
 		Stroke stroke = new BasicStroke( 1 );
 		g.setStroke( stroke );
-		int k = barWidth / 6;
+		int k = width / 6;
 		g.drawLine( x + k, half, x + k, half + height ); // draws down
 		g.drawLine( x - k, half, x - k, half + height ); // draws down
 		g.drawLine( x - k, half + height, x + k, half + height ); // draws across

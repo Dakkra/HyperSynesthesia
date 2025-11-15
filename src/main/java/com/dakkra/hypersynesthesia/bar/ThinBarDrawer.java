@@ -22,12 +22,8 @@ import java.awt.*;
 
 public class ThinBarDrawer extends BarDrawer {
 
-	public ThinBarDrawer( Graphics2D g, int half, int barWidth ) {
-		super( g, half, barWidth );
-	}
-
 	@Override
-	public void drawBar( int height, int x ) {
+	public void drawBar( Graphics2D g, int width, int height, int x, int half ) {
 		Stroke stroke = new BasicStroke( 2 );
 		g.setStroke( stroke );
 		g.drawLine( x, half, x, half + height ); // draws down

@@ -22,17 +22,10 @@ import java.awt.*;
 
 public class EtchedBlockDrawer extends BarDrawer {
 
-	public EtchedBlockDrawer( Graphics2D g, int half, int barWidth ) {
-		super( g, half, barWidth );
-		g.setRenderingHint( RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE );
-		g.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
-
-	}
-
 	@Override
-	public void drawBar( int height, int x ) {
-		int center = barWidth / 2;
-		int drawBarWidth = barWidth - 3;
+	public void drawBar( Graphics2D g, int width, int height, int x, int half ) {
+		int center = width / 2;
+		int drawBarWidth = width - 3;
 		int drawHeight = height + 1; // make it so we never see a value of 0
 		Stroke stroke = new BasicStroke( 1 );
 		g.setStroke( stroke );

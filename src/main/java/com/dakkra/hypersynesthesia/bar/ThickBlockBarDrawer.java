@@ -22,14 +22,10 @@ import java.awt.*;
 
 public class ThickBlockBarDrawer extends BarDrawer {
 
-	public ThickBlockBarDrawer( Graphics2D g, int half, int barWidth ) {
-		super( g, half, barWidth );
-	}
-
 	@Override
-	public void drawBar( int height, int x ) {
-		int space = barWidth / 2;
-		Stroke stroke = new BasicStroke( barWidth - space );
+	public void drawBar( Graphics2D g, int width, int height, int x, int half ) {
+		int space = width / 2;
+		Stroke stroke = new BasicStroke( width - space );
 		g.setStroke( stroke );
 		g.drawLine( x, half, x, half + height ); // draws down
 		g.drawLine( x, half, x, half - height ); // draws up

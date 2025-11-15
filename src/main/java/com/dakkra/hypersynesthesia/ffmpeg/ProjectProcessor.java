@@ -19,7 +19,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
@@ -79,19 +78,13 @@ public class ProjectProcessor {
 		return music;
 	}
 
-	public FrameRenderer renderVideoFile( MusicFile music, RenderSettings settings, Consumer<Double> progressConsumer, Consumer<String> messageConsumer ) {
+	public FrameRenderer renderVideoFile( MusicFile music, RenderSettings settings, Consumer<Double> progressConsumer, Consumer<String> messageConsumer ) throws IOException {
 		// NOTE Is this where the processing is split between loading and rendering?
-
 		System.out.println( "Frame rendering..." );
-		List<Path> fileNameList = new ArrayList<>();
-		FrameRenderer frameRenderer = new FrameRenderer( product.getProgram(), fileNameList, music, settings, progressConsumer );
+		FrameRenderer frameRenderer = new FrameRenderer( product.getProgram(), music, settings, progressConsumer );
 
-		// Remove existing files
-		try {
-			FileUtil.delete( settings.targetPath() );
-		} catch( IOException exception ) {
-			throw new RuntimeException( exception );
-		}
+		// Remove existing file(s)
+		FileUtil.delete( settings.targetPath() );
 
 		long initialTime = Clock.systemUTC().millis();
 
@@ -110,7 +103,7 @@ public class ProjectProcessor {
 				.addInput( UrlInput.fromPath( music.getFile() ) )
 				.addOutput( UrlOutput.toPath( settings.targetPath() ) )
 				.addArguments( "-framerate", "60" )
-				.addArguments( "-i", "output%d.jpg" )
+				.addArguments( "-i", settings.targetPath().getParent().resolve( settings.prefix() + "%d.jpg" ).toString() )
 				.addArguments( "-crf", "15" )
 				.execute();
 			System.out.println( "Video encoding complete" );
@@ -129,7 +122,7 @@ public class ProjectProcessor {
 
 		// Remove the frames unless we are making a frame sequence
 		if( settings.outputFormat() != OutputFormat.FRAME_SEQUENCE ) {
-			for( Path fileName : fileNameList ) {
+			for( Path fileName : frameRenderer.getFrameFiles() ) {
 				try {
 					Files.delete( fileName );
 				} catch( IOException ignore ) {}

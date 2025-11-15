@@ -1,8 +1,10 @@
 package com.dakkra.hypersynesthesia;
 
 import com.avereon.product.Rb;
+import com.avereon.util.FileUtil;
 import com.avereon.xenon.UiFactory;
 import com.avereon.xenon.XenonProgramProduct;
+import com.avereon.xenon.notice.Notice;
 import com.avereon.xenon.resource.Resource;
 import com.avereon.xenon.task.Task;
 import com.avereon.xenon.tool.guide.GuidedTool;
@@ -138,9 +140,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 		getChildren().addAll( grid );
 
-		executeButton.setOnAction( event -> {
-			execute();
-		} );
+		executeButton.setOnAction( _ -> execute() );
 	}
 
 	private void requestBackgroundImage() {
@@ -213,6 +213,12 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 		Path outputPath = Path.of( this.targetVideo.getText() );
 		OutputFormat outputFormat = this.outputFormat.getSelectionModel().getSelectedItem().key();
+		if( outputFormat == OutputFormat.MP4 ) {
+			if( !outputPath.getFileName().toString().endsWith( ".mp4" ) ) {
+				outputPath = outputPath.resolveSibling( outputPath.getFileName() + ".mp4" );
+			}
+		}
+		final Path finalOutputPath = outputPath;
 
 		Fx.run( () -> {
 			videoProgressBar.setProgress( ProgressIndicator.INDETERMINATE_PROGRESS );
@@ -225,35 +231,45 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		String taskName = Rb.text( getProduct(), BUNDLE, "generate-video-title" );
 		Task<?> renderTask = Task.of(
 			taskName, () -> {
-				RenderSettings settings = new RenderSettings()
-					.sourcePath( Path.of( this.sourceAudio.getText() ) )
-					.width( width )
-					.height( height )
-					.frameRate( frameRate )
-					.backgroundColor( backgroundPaint )
-					.backgroundImage( backgroundImage )
-					.barStyle( barStyle )
-					.barColor( barPaint )
-					.targetPath( outputPath )
-					.outputFormat( outputFormat );
-				FrameRenderer frameRenderer = projectProcessor.renderVideoFile(
-					music,
-					settings,
-					progress -> Fx.run( () -> videoProgressBar.setProgress( progress ) ),
-					message -> Fx.run( () -> renderEfficiency.setText( message ) )
-				);
+				try {
+					Path source = Path.of( this.sourceAudio.getText() );
+					RenderSettings settings = new RenderSettings()
+						.prefix( FileUtil.removeExtension( source.getFileName() ).toString() )
+						.sourcePath( source )
+						.width( width )
+						.height( height )
+						.frameRate( frameRate )
+						.backgroundColor( backgroundPaint )
+						.backgroundImage( backgroundImage )
+						.barStyle( barStyle )
+						.barColor( barPaint )
+						.targetPath( finalOutputPath )
+						.outputFormat( outputFormat );
 
-				double musicMillis = music.getDuration().toMillis();
-				double renderMillis = projectProcessor.getRenderDuration().toMillis();
-				double renderRatioValue = 100 * (renderMillis / musicMillis);
+					FrameRenderer frameRenderer = projectProcessor.renderVideoFile(
+						music,
+						settings,
+						progress -> Fx.run( () -> videoProgressBar.setProgress( progress ) ),
+						message -> Fx.run( () -> renderEfficiency.setText( message ) )
+					);
 
-				Fx.run( () -> {
-					videoProgressBar.setProgress( 1.0 );
-					renderEfficiency.setText( Rb.text( getProduct(), BUNDLE, "render-ratio", renderRatioValue ) );
-					videoFrames.setText( String.valueOf( frameRenderer.getFrameCount() ) );
-					videoResolution.setText( width + "x" + height );
-					this.renderDuration.setText( formatDuration( projectProcessor.getRenderDuration() ) );
-				} );
+					double musicMillis = music.getDuration().toMillis();
+					double renderMillis = projectProcessor.getRenderDuration().toMillis();
+					double renderRatioValue = 100 * (renderMillis / musicMillis);
+
+					Fx.run( () -> {
+						videoProgressBar.setProgress( 1.0 );
+						renderEfficiency.setText( Rb.text( getProduct(), BUNDLE, "render-ratio", renderRatioValue ) );
+						videoFrames.setText( String.valueOf( frameRenderer.getFrameCount() ) );
+						videoResolution.setText( width + "x" + height );
+						this.renderDuration.setText( formatDuration( projectProcessor.getRenderDuration() ) );
+					} );
+				} catch( Exception exception ) {
+					Notice notice = new Notice( Rb.text( getProduct(), BUNDLE, "generate-video-error-title", exception.getMessage() ) );
+					notice.setType( Notice.Type.ERROR );
+					notice.setCause( exception );
+					getProduct().getProgram().getNoticeManager().addNotice( notice );
+				}
 			}
 		);
 		getProgram().getTaskManager().submit( renderTask );

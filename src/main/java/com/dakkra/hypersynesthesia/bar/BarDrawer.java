@@ -22,17 +22,6 @@ import java.awt.*;
 
 public abstract class BarDrawer {
 
-	public Graphics2D g;
+	public abstract void drawBar( Graphics2D g, int width, int height, int x, int half );
 
-	public int half;
-
-	public int barWidth;
-
-	public BarDrawer( Graphics2D g, int half, int barWidth ) {
-		this.g = g;
-		this.half = half;
-		this.barWidth = barWidth;
-	}
-
-	public abstract void drawBar( int height, int x );
 }
