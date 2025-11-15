@@ -16,6 +16,7 @@ module com.dakkra.hypersynthesthesia {
 
 	// Public resources
 	opens com.dakkra.hypersynesthesia.bundles;
+	exports com.dakkra.hypersynesthesia.bar to com.avereon.xenon;
 	//opens com.dakkra.hypersynesthesia.settings;
 
 	provides Module with HyperSynesthesia;

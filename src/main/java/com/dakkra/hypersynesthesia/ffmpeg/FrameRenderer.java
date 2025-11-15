@@ -3,6 +3,7 @@ package com.dakkra.hypersynesthesia.ffmpeg;
 import com.avereon.util.FileUtil;
 import com.avereon.xenon.Xenon;
 import com.avereon.xenon.task.Task;
+import com.avereon.zerra.color.Colors;
 import com.dakkra.hypersynesthesia.OutputFormat;
 import lombok.CustomLog;
 import lombok.Getter;
@@ -74,7 +75,7 @@ public class FrameRenderer {
 		// reasons. This image is then passed each time a frame is rendered.
 		BufferedImage tempBackground = new BufferedImage( settings.width(), settings.height(), BufferedImage.TYPE_3BYTE_BGR );
 		Graphics2D graphics = tempBackground.createGraphics();
-		graphics.setColor( asAwtColor( settings.backgroundColor() ) );
+		graphics.setColor( Colors.asAwtColor( settings.backgroundColor() ) );
 		graphics.fillRect( 0, 0, settings.width(), settings.height() );
 		try {
 			// Load custom background image
@@ -178,11 +179,6 @@ public class FrameRenderer {
 		}
 	}
 
-	// TODO Move to zerra library at some point
-	private static java.awt.Color asAwtColor( javafx.scene.paint.Color color ) {
-		return new java.awt.Color( (float)color.getRed(), (float)color.getGreen(), (float)color.getBlue(), (float)color.getOpacity() );
-	}
-
 	private static IndexedImage renderFrame( long frameIndex, RenderSettings settings, BufferedImage backgroundImage, double loudness, ArrayList<Double> spectrum ) {
 		int frameWidth = settings.width();
 		int frameHeight = settings.height();
@@ -196,7 +192,7 @@ public class FrameRenderer {
 		graphics.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
 
 		// Bar color
-		java.awt.Color barColor = asAwtColor( settings.barColor() );
+		java.awt.Color barColor = Colors.asAwtColor( settings.barColor() );
 
 		// Render spectrum
 		double barWidth = (double)frameWidth / (double)spectrum.size();
