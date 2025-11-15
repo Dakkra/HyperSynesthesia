@@ -64,21 +64,20 @@ public class FrameRenderer {
 		frameCount = numFrames;
 		Vector<Future<?>> futures = new Vector<>();
 
-		System.out.println( "Loading background image" );
-		BufferedImage tempBackgroundImage = null;
+		System.out.println( "Generate background" );
+		// Generate background image
+		// The background image is generated here, only one time, for performance
+		// reasons. This image is then passed each time a frame is rendered.
+		BufferedImage tempBackground = new BufferedImage( settings.width(), settings.height(), BufferedImage.TYPE_3BYTE_BGR );
+		Graphics2D graphics = tempBackground.createGraphics();
+		graphics.setColor( asAwtColor( settings.backgroundColor() ) );
+		graphics.fillRect( 0, 0, settings.width(), settings.height() );
 		try {
-			tempBackgroundImage = ImageIO.read( new FileInputStream( settings.backgroundImage().toFile() ) );
-		} catch( IOException exception ) {
-			try {
-				// FIXME eventually remove this option and don't render the image if null
-				tempBackgroundImage = ImageIO.read( Objects.requireNonNull( this.getClass().getResourceAsStream( "/hs-logo.png" ) ) );
-			} catch( IOException ignore ) {
-				//
-			}
-			//			exception.printStackTrace(System.err);
-			//			throw new RuntimeException( exception );
-		}
-		final BufferedImage backgroundImage = tempBackgroundImage;
+			// Load custom background image
+			BufferedImage tempBackgroundImage = ImageIO.read( new FileInputStream( settings.backgroundImage().toFile() ) );
+			graphics.drawImage( tempBackgroundImage, 0, 0, settings.width(), settings.height(), null );
+		} catch( IOException ignore ) {}
+		final BufferedImage background = tempBackground;
 
 		// Reinitialize the RMS queue
 		rmsQueue.clear();
@@ -128,8 +127,7 @@ public class FrameRenderer {
 
 			Future<?> future = program.getTaskManager().submit( Task.of( () -> {
 				try {
-					//ImageIO.write( pocRenderImage( index, frameWidth, frameHeight, backgroundImage, loudness, new ArrayList<>( spectrumAvg ) ).internalImage(), "jpg", new File( "output" + index + ".jpg" ) );
-					ImageIO.write( renderImage( index, settings, backgroundImage, loudnessAvg, new ArrayList<>( spectrumAvg ) ).internalImage(), "jpg", new File( "output" + index + ".jpg" ) );
+					ImageIO.write( renderFrame( index, settings, background, loudnessAvg, new ArrayList<>( spectrumAvg ) ).internalImage(), "jpg", new File( "output" + index + ".jpg" ) );
 					nameList.add( "output" + index + ".jpg" );
 				} catch( IOException e ) {
 					e.printStackTrace( System.err );
@@ -151,17 +149,21 @@ public class FrameRenderer {
 		}
 	}
 
+	// TODO Move to zerra library at some point
 	private static java.awt.Color asAwtColor( javafx.scene.paint.Color color ) {
 		return new java.awt.Color( (float)color.getRed(), (float)color.getGreen(), (float)color.getBlue(), (float)color.getOpacity() );
 	}
 
-	private static IndexedImage renderImage( long frameIndex, RenderSettings settings, BufferedImage backgroundImage, double loudness, ArrayList<Double> spectrum ) {
+	private static IndexedImage renderFrame( long frameIndex, RenderSettings settings, BufferedImage backgroundImage, double loudness, ArrayList<Double> spectrum ) {
 		int frameWidth = settings.width();
 		int frameHeight = settings.height();
-		BufferedImage image = new BufferedImage( frameWidth, frameHeight, BufferedImage.TYPE_3BYTE_BGR );
-		Graphics2D graphics = image.createGraphics();
-		graphics.setColor( asAwtColor( settings.backgroundColor() ) );
-		graphics.fillRect( 0, 0, frameWidth, frameHeight );
+		BufferedImage frame = new BufferedImage( frameWidth, frameHeight, BufferedImage.TYPE_3BYTE_BGR );
+		Graphics2D graphics = frame.createGraphics();
+
+		// Blit the background
+		graphics.drawImage( backgroundImage, 0, 0, frameWidth, frameHeight, null );
+
+		// Set rendering hints
 		graphics.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
 
 		// Render spectrum
@@ -173,7 +175,7 @@ public class FrameRenderer {
 			graphics.fillRect( (int)x, (int)barHeight, (int)barWidth, (int)(barHeight * spectrum.get( i )) );
 		}
 
-		return new IndexedImage( image, frameIndex );
+		return new IndexedImage( frame, frameIndex );
 	}
 
 	private static IndexedImage pocRenderImage( long frameIndex, int frameWidth, int frameHeight, BufferedImage backgroundImage, double loudness, ArrayList<Double> spectrum ) {
