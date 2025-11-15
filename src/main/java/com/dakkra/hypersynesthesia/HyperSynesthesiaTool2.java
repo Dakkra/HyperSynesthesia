@@ -143,7 +143,14 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 	}
 
 	private void requestBackgroundImage() {
+		FileChooser fileChooser = new FileChooser();
+		fileChooser.setTitle( Rb.text( getProduct(), BUNDLE, "background-image-title" ) );
+		fileChooser.setInitialDirectory( new File( System.getProperty( "user.home" ), "Pictures" ) );
+		File inputFile = fileChooser.showOpenDialog( getProgram().getWorkspaceManager().getActiveStage() );
+		if( inputFile == null ) return;
 
+		backgroundImage.setText( inputFile.toString() );
+		updateActions();
 	}
 
 	private void requestSourceAudioFile() {
@@ -355,6 +362,8 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		grid.add( backgroundImagePrompt, 0, row, 1, 1 );
 		grid.add( backgroundImage, 1, row, 1, 1 );
 		grid.add( backgroundImageButton, 2, row, 1, 1 );
+
+		backgroundImageButton.setOnAction( _ -> requestBackgroundImage() );
 
 		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "background-options-title" ), grid );
 		pane.setCollapsible( false );
