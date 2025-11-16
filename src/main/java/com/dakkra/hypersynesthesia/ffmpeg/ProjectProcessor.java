@@ -78,10 +78,16 @@ public class ProjectProcessor {
 		return music;
 	}
 
-	public FrameRenderer renderVideoFile( MusicFile music, RenderSettings settings, Consumer<Double> progressConsumer, Consumer<Double> encodingProgress, Consumer<String> messageConsumer ) throws IOException {
+	public FrameRenderer renderVideoFile(
+		MusicFile music,
+		RenderSettings settings,
+		Consumer<Double> renderProgress,
+		Consumer<Double> encodingProgress,
+		Consumer<String> messageConsumer
+	) throws IOException {
 		// NOTE Is this where the processing is split between loading and rendering?
 		System.out.println( "Frame rendering..." );
-		FrameRenderer frameRenderer = new FrameRenderer( product.getProgram(), music, settings, progressConsumer );
+		FrameRenderer frameRenderer = new FrameRenderer( product.getProgram(), music, settings, renderProgress );
 
 		// Remove existing file(s)
 		FileUtil.delete( settings.targetPath() );
@@ -102,8 +108,7 @@ public class ProjectProcessor {
 				.atPath()
 				.addInput( UrlInput.fromPath( music.getFile() ) )
 				.addOutput( UrlOutput.toPath( settings.targetPath() ) )
-				// FFmpegProgress{frame=5009, fps=183.94, q=-1.0, size=20525104, timeMicros=83450000, dup=0, drop=0, bitrate=1967.7, speed=3.06}
-				.setProgressListener( (a) -> System.out.println( "FFmpeg progress: " + a ) )
+				.setProgressListener( progress -> encodingProgress.accept( (double)progress.getFrame() / (double)music.getFrameCount() ) )
 				.addArguments( "-framerate", String.valueOf( settings.frameRate() ) )
 				.addArguments( "-i", settings.targetPath().getParent().resolve( settings.prefix() + "%d.jpg" ).toString() )
 				.addArguments( "-crf", "15" )
