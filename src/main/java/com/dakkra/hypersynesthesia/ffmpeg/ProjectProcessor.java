@@ -78,7 +78,7 @@ public class ProjectProcessor {
 		return music;
 	}
 
-	public FrameRenderer renderVideoFile( MusicFile music, RenderSettings settings, Consumer<Double> progressConsumer, Consumer<String> messageConsumer ) throws IOException {
+	public FrameRenderer renderVideoFile( MusicFile music, RenderSettings settings, Consumer<Double> progressConsumer, Consumer<Double> encodingProgress, Consumer<String> messageConsumer ) throws IOException {
 		// NOTE Is this where the processing is split between loading and rendering?
 		System.out.println( "Frame rendering..." );
 		FrameRenderer frameRenderer = new FrameRenderer( product.getProgram(), music, settings, progressConsumer );

@@ -204,7 +204,7 @@ public class HyperSynesthesiaTool extends GuidedTool {
 		Path outputFile = fileChooser.showSaveDialog( getProgram().getWorkspaceManager().getActiveStage() ).toPath();
 
 		RenderSettings settings = new RenderSettings().width( width ).height( height ).targetPath( outputFile );
-		Task<?> renderTask = Task.of( "Render Video", () -> projectProcessor.renderVideoFile( music, settings, _ -> {}, _ ->{} ) );
+		Task<?> renderTask = Task.of( "Render Video", () -> projectProcessor.renderVideoFile( music, settings, _ -> {}, _ -> {}, _ ->{} ) );
 		getProgram().getTaskManager().submit( renderTask );
 
 		// TODO Update actions

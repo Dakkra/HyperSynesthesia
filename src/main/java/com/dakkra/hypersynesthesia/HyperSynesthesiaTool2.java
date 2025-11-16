@@ -81,7 +81,9 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 	private final Button executeButton;
 
-	private final ProgressBar videoProgressBar;
+	private final ProgressBar renderProgressBar;
+
+	private final ProgressBar encodingProgressBar;
 
 	private final TextField videoFrames;
 
@@ -120,7 +122,8 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		barColor = new ColorPicker( DEFAULT_BAR_COLOR );
 
 		executeButton = new Button( Rb.text( getProduct(), BUNDLE, "generate" ) );
-		videoProgressBar = new ProgressBar( 0 );
+		renderProgressBar = new ProgressBar( 0 );
+		encodingProgressBar = new ProgressBar( 0 );
 		videoFrames = new TextField();
 		videoResolution = new TextField();
 		renderDuration = new TextField();
@@ -162,7 +165,22 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		if( inputFile == null ) return;
 
 		sourceAudio.setText( inputFile.toString() );
+
+		initializeAudioSource();
+	}
+
+	private void initializeAudioSource() {
+		Fx.affirmOnFxThread();
+
+		File inputFile = new File( sourceAudio.getText() );
+
+		// Initial target
+		String baseName = FileUtil.removeExtension( inputFile.getName() );
+		File videos = new File( System.getProperty( "user.home" ), "Videos" );
+		targetVideo.setText( new File( videos, baseName + ".mp4" ).toString() );
+
 		audioProgressBar.setProgress( ProgressIndicator.INDETERMINATE_PROGRESS );
+		updateActions();
 
 		Task<Void> loadTask = Task.of(
 			"Load Music", () -> {
@@ -176,10 +194,11 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 				Fx.run( () -> this.sampleCount.setText( String.valueOf( music.getNumSamples() ) ) );
 				Fx.run( () -> this.fftCount.setText( String.valueOf( music.getFftQueue().size() ) ) );
 
-				updateActions();
 				return null;
 			}
 		);
+
+		loadTask.setPriority( Task.Priority.LOW );
 		getProgram().getTaskManager().submit( loadTask );
 	}
 
@@ -222,7 +241,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 
 		Fx.run( () -> {
 			executeButton.setDisable( true );
-			videoProgressBar.setProgress( ProgressIndicator.INDETERMINATE_PROGRESS );
+			renderProgressBar.setProgress( ProgressIndicator.INDETERMINATE_PROGRESS );
 			renderEfficiency.setText( null );
 			videoFrames.setText( null );
 			videoResolution.setText( null );
@@ -250,7 +269,8 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 					FrameRenderer frameRenderer = projectProcessor.renderVideoFile(
 						music,
 						settings,
-						progress -> Fx.run( () -> videoProgressBar.setProgress( progress ) ),
+						progress -> Fx.run( () -> renderProgressBar.setProgress( progress ) ),
+						progress -> Fx.run( () -> encodingProgressBar.setProgress( progress ) ),
 						message -> Fx.run( () -> renderEfficiency.setText( message ) )
 					);
 
@@ -259,7 +279,8 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 					double renderRatioValue = 100 * (renderMillis / musicMillis);
 
 					Fx.run( () -> {
-						videoProgressBar.setProgress( 1.0 );
+						renderProgressBar.setProgress( 1.0 );
+						encodingProgressBar.setProgress( 1.0 );
 						renderEfficiency.setText( Rb.text( getProduct(), BUNDLE, "render-ratio", renderRatioValue ) );
 						videoFrames.setText( String.valueOf( frameRenderer.getFrameCount() ) );
 						videoResolution.setText( width + "x" + height );
@@ -325,7 +346,13 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		grid.add( sourceAudioDurationPrompt, 0, row, 1, 1 );
 		grid.add( sourceAudioDuration, 1, row, 1, 1 );
 
-		sourceAudioButton.setOnAction( event -> requestSourceAudioFile() );
+		sourceAudio.focusedProperty().addListener( ( _, _, n ) -> {
+			if( n == false ) initializeAudioSource();
+		} );
+		sourceAudio.setOnKeyTyped( event -> {
+			if( event.getCharacter().equals( "\n" ) ) initializeAudioSource();
+		} );
+		sourceAudioButton.setOnAction( _ -> requestSourceAudioFile() );
 
 		TitledPane pane = new TitledPane( Rb.text( getProduct(), BUNDLE, "source-path-title" ), grid );
 		pane.setCollapsible( false );
@@ -461,9 +488,13 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		executeButton.setMaxWidth( Double.MAX_VALUE );
 		executeButton.setDisable( true );
 
-		Label progressPrompt = new Label( Rb.text( getProduct(), BUNDLE, "generate-video-prompt" ) );
-		GridPane.setHgrow( videoProgressBar, javafx.scene.layout.Priority.ALWAYS );
-		videoProgressBar.setMaxWidth( Double.MAX_VALUE );
+		Label renderProgressPrompt = new Label( Rb.text( getProduct(), BUNDLE, "render-progress-prompt" ) );
+		GridPane.setHgrow( renderProgressBar, javafx.scene.layout.Priority.ALWAYS );
+		renderProgressBar.setMaxWidth( Double.MAX_VALUE );
+
+		Label encodingProgressPrompt = new Label( Rb.text( getProduct(), BUNDLE, "encoding-progress-prompt" ) );
+		GridPane.setHgrow( encodingProgressBar, javafx.scene.layout.Priority.ALWAYS );
+		encodingProgressBar.setMaxWidth( Double.MAX_VALUE );
 
 		Label renderRatioPrompt = new Label( Rb.text( getProduct(), BUNDLE, "render-ratio-prompt" ) );
 		GridPane.setHgrow( renderEfficiency, javafx.scene.layout.Priority.ALWAYS );
@@ -489,8 +520,12 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		grid.add( executeButton, 0, row, 4, 1 );
 
 		row++;
-		grid.add( progressPrompt, 0, row, 1, 1 );
-		grid.add( videoProgressBar, 1, row, 3, 1 );
+		grid.add( renderProgressPrompt, 0, row, 1, 1 );
+		grid.add( renderProgressBar, 1, row, 3, 1 );
+
+		row++;
+		grid.add( encodingProgressPrompt, 0, row, 1, 1 );
+		grid.add( encodingProgressBar, 1, row, 3, 1 );
 
 		row++;
 		grid.add( renderRatioPrompt, 0, row, 1, 1 );
