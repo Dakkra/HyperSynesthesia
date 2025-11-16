@@ -102,7 +102,9 @@ public class ProjectProcessor {
 				.atPath()
 				.addInput( UrlInput.fromPath( music.getFile() ) )
 				.addOutput( UrlOutput.toPath( settings.targetPath() ) )
-				.addArguments( "-framerate", "60" )
+				// FFmpegProgress{frame=5009, fps=183.94, q=-1.0, size=20525104, timeMicros=83450000, dup=0, drop=0, bitrate=1967.7, speed=3.06}
+				.setProgressListener( (a) -> System.out.println( "FFmpeg progress: " + a ) )
+				.addArguments( "-framerate", String.valueOf( settings.frameRate() ) )
 				.addArguments( "-i", settings.targetPath().getParent().resolve( settings.prefix() + "%d.jpg" ).toString() )
 				.addArguments( "-crf", "15" )
 				.execute();

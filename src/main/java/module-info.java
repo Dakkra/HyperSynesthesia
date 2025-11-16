@@ -11,6 +11,7 @@ module com.dakkra.hypersynthesthesia {
 	requires org.jspecify;
 	requires javafx.graphics;
 	requires com.avereon.zevra;
+	requires java.desktop;
 
 	exports com.dakkra.hypersynesthesia to com.avereon.xenon;
 

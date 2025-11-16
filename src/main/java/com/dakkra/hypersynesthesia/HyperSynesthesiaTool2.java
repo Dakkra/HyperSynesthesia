@@ -221,6 +221,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		final Path finalOutputPath = outputPath;
 
 		Fx.run( () -> {
+			executeButton.setDisable( true );
 			videoProgressBar.setProgress( ProgressIndicator.INDETERMINATE_PROGRESS );
 			renderEfficiency.setText( null );
 			videoFrames.setText( null );
@@ -234,7 +235,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 				try {
 					Path source = Path.of( this.sourceAudio.getText() );
 					RenderSettings settings = new RenderSettings()
-						.prefix( FileUtil.removeExtension( source.getFileName() ).toString() )
+						.prefix( FileUtil.removeExtension( finalOutputPath.getFileName() ).toString() )
 						.sourcePath( source )
 						.width( width )
 						.height( height )
@@ -263,6 +264,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 						videoFrames.setText( String.valueOf( frameRenderer.getFrameCount() ) );
 						videoResolution.setText( width + "x" + height );
 						this.renderDuration.setText( formatDuration( projectProcessor.getRenderDuration() ) );
+						executeButton.setDisable( false );
 					} );
 				} catch( Exception exception ) {
 					Notice notice = new Notice( Rb.text( getProduct(), BUNDLE, "generate-video-error-title", exception.getMessage() ) );
