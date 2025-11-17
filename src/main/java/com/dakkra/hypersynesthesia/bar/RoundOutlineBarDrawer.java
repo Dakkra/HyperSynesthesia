@@ -30,11 +30,7 @@ public class RoundOutlineBarDrawer extends BarDrawer {
 		int radius = drawBarWidth;
 		Stroke stroke = new BasicStroke( 1 );
 		g.setStroke( stroke );
-
-		// new way
-		// System.out.println(radius); --system runs on truncation for non ints
-		g.drawRoundRect( x - center, half - height, drawBarWidth, drawHeight * 2, radius, radius );// draw up and down
-
+		g.drawRoundRect( x - center, half - height, drawBarWidth, drawHeight * 2, radius, radius );
 	}
 
 }

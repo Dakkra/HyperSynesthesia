@@ -29,11 +29,7 @@ public class EtchedBlockDrawer extends BarDrawer {
 		int drawHeight = height + 1; // make it so we never see a value of 0
 		Stroke stroke = new BasicStroke( 1 );
 		g.setStroke( stroke );
-
-		// new way
-		// System.out.println(radius); --system runs on truncation for non ints
-		g.fill3DRect( x - center, half - height, drawBarWidth, drawHeight * 2, false );// draw up and down
-
+		g.fill3DRect( x - center, half - height, drawBarWidth, drawHeight * 2, false );
 	}
 
 }
