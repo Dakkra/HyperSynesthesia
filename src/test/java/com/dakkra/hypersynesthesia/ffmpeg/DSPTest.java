@@ -25,7 +25,7 @@ class DSPTest {
         dsp.processLight(samples);
 
         assertEquals(4, dsp.getPeak(), "Peak loudness should be absolute max of samples");
-        double expectedRms = Math.sqrt((0*0 + 9 + 16 + 4) / 4.0);
+        double expectedRms = Math.sqrt((9 + 16 + 4) / 4.0);
         assertEquals(expectedRms, dsp.getRMS(), 1e-12);
 
         // Loudness getters are normalized by Integer.MAX_VALUE
