@@ -6,6 +6,7 @@ import lombok.Getter;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -22,14 +23,20 @@ public class MusicFile {
 
 	private Vector<Integer> samplesAvg;
 
-	private long sampleRate = 0L;
+	private int sampleRate;
 
 	private int numSamples;
+
+	private Duration duration;
 
 	private PriorityBlockingQueue<PrioritySpectrum> fftQueue;
 
 	public MusicFile( Path file ) {
 		this.file = file;
+	}
+
+	public int getFrameCount() {
+		return fftQueue.size();
 	}
 
 	public MusicFile load() {
@@ -45,7 +52,7 @@ public class MusicFile {
 
 			@Override
 			public void consumeStreams( List<Stream> streams ) {
-				sampleRate = streams.get( 0 ).getSampleRate();
+				sampleRate = streams.getFirst().getSampleRate().intValue();
 			}
 
 			@Override
@@ -71,8 +78,8 @@ public class MusicFile {
 		} );
 
 		numSamples = samplesAvg.size();
-		this.fftQueue = new PriorityBlockingQueue<>( (int)(sampleRate / 60) );
-		System.out.println( "Music File " + file.getFileName() + " has " + numSamples + " samples" );
+		duration = Duration.ofSeconds( numSamples / sampleRate );
+		this.fftQueue = new PriorityBlockingQueue<>( sampleRate / 60 );
 
 		return this;
 	}

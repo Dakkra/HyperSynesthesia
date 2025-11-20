@@ -25,7 +25,7 @@ public class HyperSynesthesia extends Module {
 		log.atInfo().log( "Initializing HyperSynesthesia");
 
 		registerAssetType( projectResourceType );
-		ToolRegistration registration = new ToolRegistration( this, HyperSynesthesiaTool.class);
+		ToolRegistration registration = new ToolRegistration( this, HyperSynesthesiaTool2.class);
 		registration.setName( "HyperSynestheisa Tool" );
 		registerTool( projectResourceType, registration );
 	}
@@ -35,7 +35,7 @@ public class HyperSynesthesia extends Module {
 		super.shutdown();
 		log.atInfo().log( "Closing HyperSynesthesia");
 
-		unregisterTool( projectResourceType, HyperSynesthesiaTool.class );
+		unregisterTool( projectResourceType, HyperSynesthesiaTool2.class );
 		unregisterAssetType( projectResourceType );
 	}
 
