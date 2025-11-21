@@ -74,7 +74,7 @@ jobs:
 
       - name: Build Module Pack
         run: |
-          mvn ${{env.MAVEN_PARMS}} verify -Dmaven.test.skip=true -P testui,mod-pack
+          mvn ${{env.MAVEN_PARMS}} verify -Dmaven.test.skip=true -Pmod-pack
 
       - name: Get Project Version
         id: get_version
