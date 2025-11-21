@@ -140,6 +140,107 @@
 					<argLine>-Xmx128m --add-opens=javafx.base/com.sun.javafx.logging=ALL-UNNAMED --add-opens=javafx.graphics/com.sun.glass.ui=ALL-UNNAMED --add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED --add-opens=javafx.graphics/com.sun.javafx.util=ALL-UNNAMED</argLine>
 				</configuration>
 			</plugin>
+
+			<!--					<plugin>-->
+			<!--						<groupId>com.avereon</groupId>-->
+			<!--						<artifactId>cameo</artifactId>-->
+			<!--						<version>${cameo.version}</version>-->
+			<!--						<executions>-->
+			<!--							<execution>-->
+			<!--								<id>render</id>-->
+			<!--								<phase>prepare-package</phase>-->
+			<!--								<goals>-->
+			<!--									<goal>render</goal>-->
+			<!--								</goals>-->
+			<!--								<configuration>-->
+			<!--									<images>-->
+			<!--										<image>-->
+			<!--											<class>com.avereon.cartesia.icon.CartesiaIcon</class>-->
+			<!--											<target>${images-folder}/product.png</target>-->
+			<!--											<theme>light</theme>-->
+			<!--										</image>-->
+			<!--									</images>-->
+			<!--								</configuration>-->
+			<!--							</execution>-->
+			<!--						</executions>-->
+			<!--					</plugin>-->
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>${maven.dependency.version}</version>
+				<executions>
+					<execution>
+						<id>copy</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<includeScope>compile</includeScope>
+							<excludeArtifactIds>
+								hamcrest,
+								lombok,
+								mapstruct,
+								jspecify,
+								junit-5,
+								testfx-core,
+								testfx-junit5
+							</excludeArtifactIds>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>com.avereon</groupId>
+				<artifactId>curex</artifactId>
+				<version>${curex.version}</version>
+				<executions>
+					<execution>
+						<id>patch-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>patch</goal>
+						</goals>
+						<configuration>
+							<modulePath>${project.build.directory}/dependency</modulePath>
+							<jars>
+								<jar>
+									<name>fft4j*.jar</name>
+								</jar>
+								<jar>
+									<name>fuzzywuzzy*.jar</name>
+								</jar>
+								<jar>
+									<name>image4j*.jar</name>
+								</jar>
+								<jar>
+									<name>jsr305*.jar</name>
+								</jar>
+								<jar>
+									<name>nanojson*.jar</name>
+								</jar>
+								<jar>
+									<name>reactfx*.jar</name>
+									<modules>
+										<module>javafx.base</module>
+										<module>javafx.graphics</module>
+										<module>javafx.controls</module>
+									</modules>
+								</jar>
+								<jar>
+									<name>undofx*.jar</name>
+									<modules>
+										<module>reactfx</module>
+									</modules>
+								</jar>
+							</jars>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 		</plugins>
 	</build>
 
@@ -175,67 +276,116 @@
 		<profile>
 			<id>packs</id>
 			<build>
-				<plugins>
-					<!--					<plugin>-->
-					<!--						<groupId>com.avereon</groupId>-->
-					<!--						<artifactId>cameo</artifactId>-->
-					<!--						<version>${cameo.version}</version>-->
-					<!--						<executions>-->
-					<!--							<execution>-->
-					<!--								<id>render</id>-->
-					<!--								<phase>prepare-package</phase>-->
-					<!--								<goals>-->
-					<!--									<goal>render</goal>-->
-					<!--								</goals>-->
-					<!--								<configuration>-->
-					<!--									<images>-->
-					<!--										<image>-->
-					<!--											<class>com.avereon.cartesia.icon.CartesiaIcon</class>-->
-					<!--											<target>${images-folder}/product.png</target>-->
-					<!--											<theme>light</theme>-->
-					<!--										</image>-->
-					<!--									</images>-->
-					<!--								</configuration>-->
-					<!--							</execution>-->
-					<!--						</executions>-->
-					<!--					</plugin>-->
 
+				<plugins>
+					<!-- Copy jpackage option files -->
 					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-dependency-plugin</artifactId>
-						<version>${maven.dependency.version}</version>
+						<artifactId>maven-resources-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>copy</id>
-								<phase>package</phase>
+								<id>jpackage-option-files</id>
+								<phase>post-integration-test</phase>
 								<goals>
-									<goal>copy-dependencies</goal>
+									<goal>copy-resources</goal>
 								</goals>
 								<configuration>
-									<includeScope>runtime</includeScope>
+									<encoding>UTF-8</encoding>
+									<resources>
+										<resource>
+											<directory>${basedir}/src/main/jpackage</directory>
+											<filtering>true</filtering>
+											<excludes>
+												<exclude>bin</exclude>
+											</excludes>
+										</resource>
+									</resources>
+									<outputDirectory>${basedir}/target/main/jpackage</outputDirectory>
+								</configuration>
+							</execution>
+							<execution>
+								<id>jpackage-image-files</id>
+								<phase>post-integration-test</phase>
+								<goals>
+									<goal>copy-resources</goal>
+								</goals>
+								<configuration>
+									<encoding>UTF-8</encoding>
+									<resources>
+										<resource>
+											<directory>${basedir}/src/main/images</directory>
+											<filtering>false</filtering>
+											<excludes>
+												<exclude>bin</exclude>
+											</excludes>
+										</resource>
+									</resources>
+									<outputDirectory>${basedir}/target/main/images</outputDirectory>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+
+					<!-- https://docs.oracle.com/en/java/javase/21/jpackage/support-application-features.html -->
+					<!-- MacOS does not allow -SNAPSHOT in version -->
+					<!-- MacOS requires version strings can consist of only numbers and up to two dots -->
+					<!-- Windows does not allow -SNAPSHOT in version -->
+					<!-- Windows requires version format z.y.x.w https://docs.microsoft.com/en-us/windows/win32/msi/version -->
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<version>${exec.maven.version}</version>
+						<executions>
+							<execution>
+								<id>jpackage-product-pack</id>
+								<phase>post-integration-test</phase>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<executable>${java.home}/bin/jpackage</executable>
+									<arguments>
+										<argument>@${basedir}/target/main/jpackage/app.options</argument>
+										<argument>@${basedir}/target/main/jpackage/product-pack-common.options</argument>
+										<argument>@${basedir}/target/main/jpackage/product-pack-${product.platform}.options</argument>
+									</arguments>
+								</configuration>
+							</execution>
+
+							<execution>
+								<id>jpackage-install-pack</id>
+								<phase>post-integration-test</phase>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<executable>${java.home}/bin/jpackage</executable>
+									<arguments>
+										<argument>@${basedir}/target/main/jpackage/app.options</argument>
+										<argument>@${basedir}/target/main/jpackage/install-pack-common.options</argument>
+										<argument>@${basedir}/target/main/jpackage/install-pack-${product.platform}.options</argument>
+									</arguments>
 								</configuration>
 							</execution>
 						</executions>
 					</plugin>
 
 					<plugin>
-						<groupId>com.avereon</groupId>
-						<artifactId>curex</artifactId>
-						<version>${curex.version}</version>
+						<artifactId>maven-assembly-plugin</artifactId>
 						<executions>
+							<!-- Assemble the product pack -->
 							<execution>
-								<id>patch-dependencies</id>
-								<phase>package</phase>
+								<!-- Must match execution id parent pom -->
+								<id>assembly-product</id>
+								<phase>post-integration-test</phase>
 								<goals>
-									<goal>patch</goal>
+									<goal>single</goal>
 								</goals>
 								<configuration>
-									<modulePath>${project.build.directory}/dependency</modulePath>
-									<jars>
-										<jar>
-											<name>fft4j*.jar</name>
-										</jar>
-									</jars>
+									<finalName>product</finalName>
+									<descriptorRefs>
+										<descriptorRef>product-${product.platform}</descriptorRef>
+									</descriptorRefs>
+									<ignoreMissingDescriptor>true</ignoreMissingDescriptor>
 								</configuration>
 							</execution>
 						</executions>
