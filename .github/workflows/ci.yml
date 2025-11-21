@@ -176,7 +176,8 @@ jobs:
     name: Pack Linux Binaries
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stable' || github.base_ref == 'refs/heads/main' || github.base_ref == 'refs/heads/stable'
+    # Temporarily disable while developing CI/CD
+    #if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stable' || github.base_ref == 'refs/heads/main' || github.base_ref == 'refs/heads/stable'
     env:
       PRODUCT_PLATFORM: "linux"
     steps:
@@ -246,7 +247,7 @@ jobs:
       - name: Publish Install Pack
         run: |
           scp -B target/jpackage/*.deb ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.deb 2>&1
-      #    scp -B target/jpackage/*.rpm ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM} 2>&1
+      #    scp -B target/jpackage/*.rpm ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.rpm 2>&1
 
       #      - name: Publish Install Pack (izpack)
       #        run: |
