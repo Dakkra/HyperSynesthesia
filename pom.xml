@@ -198,38 +198,6 @@
 		</profile>
 
 		<profile>
-			<id>mod-pack</id>
-			<build>
-
-				<plugins>
-
-					<plugin>
-						<artifactId>maven-assembly-plugin</artifactId>
-						<executions>
-							<!-- Assemble the product pack -->
-							<execution>
-								<!-- Must match execution id parent pom -->
-								<id>assembly-product</id>
-								<phase>post-integration-test</phase>
-								<goals>
-									<goal>single</goal>
-								</goals>
-								<configuration>
-									<finalName>product</finalName>
-									<descriptorRefs>
-										<descriptorRef>product-${product.platform}</descriptorRef>
-									</descriptorRefs>
-									<ignoreMissingDescriptor>true</ignoreMissingDescriptor>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-
-				</plugins>
-			</build>
-		</profile>
-
-		<profile>
 			<id>app-pack</id>
 			<build>
 
@@ -397,6 +365,29 @@
 										<argument>@${basedir}/target/main/jpackage/install-pack-common.options</argument>
 										<argument>@${basedir}/target/main/jpackage/install-pack-${product.platform}.options</argument>
 									</arguments>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+
+					<plugin>
+						<!-- This is HyperSynesthesia the application, not the module -->
+						<artifactId>maven-assembly-plugin</artifactId>
+						<executions>
+							<!-- Assemble the product pack -->
+							<execution>
+								<!-- Must match execution id parent pom -->
+								<id>assembly-product</id>
+								<phase>post-integration-test</phase>
+								<goals>
+									<goal>single</goal>
+								</goals>
+								<configuration>
+									<finalName>product</finalName>
+									<descriptorRefs>
+										<descriptorRef>product-${product.platform}</descriptorRef>
+									</descriptorRefs>
+									<ignoreMissingDescriptor>true</ignoreMissingDescriptor>
 								</configuration>
 							</execution>
 						</executions>
