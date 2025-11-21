@@ -165,82 +165,6 @@
 			<!--						</executions>-->
 			<!--					</plugin>-->
 
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<version>${maven.dependency.version}</version>
-				<executions>
-					<execution>
-						<id>copy</id>
-						<phase>package</phase>
-						<goals>
-							<goal>copy-dependencies</goal>
-						</goals>
-						<configuration>
-							<includeScope>compile</includeScope>
-							<excludeArtifactIds>
-								hamcrest,
-								lombok,
-								mapstruct,
-								jspecify,
-								junit-5,
-								testfx-core,
-								testfx-junit5
-							</excludeArtifactIds>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>com.avereon</groupId>
-				<artifactId>curex</artifactId>
-				<version>${curex.version}</version>
-				<executions>
-					<execution>
-						<id>patch-dependencies</id>
-						<phase>package</phase>
-						<goals>
-							<goal>patch</goal>
-						</goals>
-						<configuration>
-							<modulePath>${project.build.directory}/dependency</modulePath>
-							<jars>
-								<jar>
-									<name>fft4j*.jar</name>
-								</jar>
-								<jar>
-									<name>fuzzywuzzy*.jar</name>
-								</jar>
-								<jar>
-									<name>image4j*.jar</name>
-								</jar>
-								<jar>
-									<name>jsr305*.jar</name>
-								</jar>
-								<jar>
-									<name>nanojson*.jar</name>
-								</jar>
-								<jar>
-									<name>reactfx*.jar</name>
-									<modules>
-										<module>javafx.base</module>
-										<module>javafx.graphics</module>
-										<module>javafx.controls</module>
-									</modules>
-								</jar>
-								<jar>
-									<name>undofx*.jar</name>
-									<modules>
-										<module>reactfx</module>
-									</modules>
-								</jar>
-							</jars>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
 		</plugins>
 	</build>
 
@@ -274,10 +198,119 @@
 		</profile>
 
 		<profile>
-			<id>packs</id>
+			<id>mod-pack</id>
 			<build>
 
 				<plugins>
+
+					<plugin>
+						<artifactId>maven-assembly-plugin</artifactId>
+						<executions>
+							<!-- Assemble the product pack -->
+							<execution>
+								<!-- Must match execution id parent pom -->
+								<id>assembly-product</id>
+								<phase>post-integration-test</phase>
+								<goals>
+									<goal>single</goal>
+								</goals>
+								<configuration>
+									<finalName>product</finalName>
+									<descriptorRefs>
+										<descriptorRef>product-${product.platform}</descriptorRef>
+									</descriptorRefs>
+									<ignoreMissingDescriptor>true</ignoreMissingDescriptor>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+
+				</plugins>
+			</build>
+		</profile>
+
+		<profile>
+			<id>app-pack</id>
+			<build>
+
+				<plugins>
+
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-dependency-plugin</artifactId>
+						<version>${maven.dependency.version}</version>
+						<executions>
+							<execution>
+								<id>copy</id>
+								<phase>package</phase>
+								<goals>
+									<goal>copy-dependencies</goal>
+								</goals>
+								<configuration>
+									<includeScope>compile</includeScope>
+									<excludeArtifactIds>
+										hamcrest,
+										lombok,
+										mapstruct,
+										jspecify,
+										junit-5,
+										testfx-core,
+										testfx-junit5
+									</excludeArtifactIds>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+
+					<plugin>
+						<groupId>com.avereon</groupId>
+						<artifactId>curex</artifactId>
+						<version>${curex.version}</version>
+						<executions>
+							<execution>
+								<id>patch-dependencies</id>
+								<phase>package</phase>
+								<goals>
+									<goal>patch</goal>
+								</goals>
+								<configuration>
+									<modulePath>${project.build.directory}/dependency</modulePath>
+									<jars>
+										<jar>
+											<name>fft4j*.jar</name>
+										</jar>
+										<jar>
+											<name>fuzzywuzzy*.jar</name>
+										</jar>
+										<jar>
+											<name>image4j*.jar</name>
+										</jar>
+										<jar>
+											<name>jsr305*.jar</name>
+										</jar>
+										<jar>
+											<name>nanojson*.jar</name>
+										</jar>
+										<jar>
+											<name>reactfx*.jar</name>
+											<modules>
+												<module>javafx.base</module>
+												<module>javafx.graphics</module>
+												<module>javafx.controls</module>
+											</modules>
+										</jar>
+										<jar>
+											<name>undofx*.jar</name>
+											<modules>
+												<module>reactfx</module>
+											</modules>
+										</jar>
+									</jars>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+
 					<!-- Copy jpackage option files -->
 					<plugin>
 						<artifactId>maven-resources-plugin</artifactId>
@@ -364,28 +397,6 @@
 										<argument>@${basedir}/target/main/jpackage/install-pack-common.options</argument>
 										<argument>@${basedir}/target/main/jpackage/install-pack-${product.platform}.options</argument>
 									</arguments>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-
-					<plugin>
-						<artifactId>maven-assembly-plugin</artifactId>
-						<executions>
-							<!-- Assemble the product pack -->
-							<execution>
-								<!-- Must match execution id parent pom -->
-								<id>assembly-product</id>
-								<phase>post-integration-test</phase>
-								<goals>
-									<goal>single</goal>
-								</goals>
-								<configuration>
-									<finalName>product</finalName>
-									<descriptorRefs>
-										<descriptorRef>product-${product.platform}</descriptorRef>
-									</descriptorRefs>
-									<ignoreMissingDescriptor>true</ignoreMissingDescriptor>
 								</configuration>
 							</execution>
 						</executions>
