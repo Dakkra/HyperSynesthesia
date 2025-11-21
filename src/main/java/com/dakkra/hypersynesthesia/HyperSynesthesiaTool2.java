@@ -185,14 +185,14 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		Task<Void> loadTask = Task.of(
 			"Load Music", () -> {
 				this.music = projectProcessor.loadMusicFile(
-					inputFile.toPath(), progress -> {
-						Fx.run( () -> audioProgressBar.setProgress( progress ) );
-					}
+					inputFile.toPath(), progress -> Fx.run( () -> audioProgressBar.setProgress( progress ) )
 				);
 
 				Fx.run( () -> this.sourceAudioDuration.setText( formatDuration( music.getDuration() ) ) );
 				Fx.run( () -> this.sampleCount.setText( String.valueOf( music.getNumSamples() ) ) );
 				Fx.run( () -> this.fftCount.setText( String.valueOf( music.getFftQueue().size() ) ) );
+
+				updateActions();
 
 				return null;
 			}
@@ -270,8 +270,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 						music,
 						settings,
 						progress -> Fx.run( () -> renderProgressBar.setProgress( progress ) ),
-						progress -> Fx.run( () -> encodingProgressBar.setProgress( progress ) ),
-						message -> Fx.run( () -> renderEfficiency.setText( message ) )
+						progress -> Fx.run( () -> encodingProgressBar.setProgress( progress ) )
 					);
 
 					double musicMillis = music.getDuration().toMillis();
@@ -328,13 +327,16 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		Label sampleCountPrompt = new Label( Rb.text( getProduct(), BUNDLE, "sample-count-prompt" ) );
 		sampleCount.setAlignment( Pos.BASELINE_RIGHT );
 		sampleCount.setEditable( false );
+		sampleCount.setFocusTraversable( false );
+		grid.add( sampleCountPrompt, 0, row, 1, 1 );
+		grid.add( sampleCount, 1, row, 1, 1 );
+
 		GridPane.setHgrow( sampleCount, javafx.scene.layout.Priority.ALWAYS );
 		Label fftCountPrompt = new Label( Rb.text( getProduct(), BUNDLE, "fft-count-prompt" ) );
 		GridPane.setHgrow( fftCount, javafx.scene.layout.Priority.ALWAYS );
 		fftCount.setAlignment( Pos.BASELINE_RIGHT );
 		fftCount.setEditable( false );
-		grid.add( sampleCountPrompt, 0, row, 1, 1 );
-		grid.add( sampleCount, 1, row, 1, 1 );
+		fftCount.setFocusTraversable( false );
 		grid.add( fftCountPrompt, 2, row, 1, 1 );
 		grid.add( fftCount, 3, row, 1, 1 );
 
@@ -343,6 +345,7 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane.setHgrow( sourceAudioDuration, javafx.scene.layout.Priority.ALWAYS );
 		sourceAudioDuration.setAlignment( Pos.BASELINE_RIGHT );
 		sourceAudioDuration.setEditable( false );
+		sourceAudioDuration.setFocusTraversable( false );
 		grid.add( sourceAudioDurationPrompt, 0, row, 1, 1 );
 		grid.add( sourceAudioDuration, 1, row, 1, 1 );
 
@@ -500,21 +503,25 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		GridPane.setHgrow( renderEfficiency, javafx.scene.layout.Priority.ALWAYS );
 		renderEfficiency.setAlignment( Pos.BASELINE_LEFT );
 		renderEfficiency.setEditable( false );
+		renderEfficiency.setFocusTraversable( false );
 
 		Label videoFramePrompt = new Label( Rb.text( getProduct(), BUNDLE, "video-frames-prompt" ) );
 		GridPane.setHgrow( videoFrames, javafx.scene.layout.Priority.ALWAYS );
 		videoFrames.setAlignment( Pos.BASELINE_RIGHT );
 		videoFrames.setEditable( false );
+		videoFrames.setFocusTraversable( false );
 
 		Label videoResolutionPrompt = new Label( Rb.text( getProduct(), BUNDLE, "video-resolution-prompt" ) );
 		GridPane.setHgrow( videoResolution, javafx.scene.layout.Priority.ALWAYS );
 		videoResolution.setAlignment( Pos.BASELINE_RIGHT );
 		videoResolution.setEditable( false );
+		videoResolution.setFocusTraversable( false );
 
 		Label videoDurationPrompt = new Label( Rb.text( getProduct(), BUNDLE, "video-duration-prompt" ) );
 		GridPane.setHgrow( renderDuration, javafx.scene.layout.Priority.ALWAYS );
 		renderDuration.setAlignment( Pos.BASELINE_RIGHT );
 		renderDuration.setEditable( false );
+		renderDuration.setFocusTraversable( false );
 
 		int row = 0;
 		grid.add( executeButton, 0, row, 4, 1 );
@@ -553,10 +560,13 @@ public class HyperSynesthesiaTool2 extends GuidedTool {
 		String sourceText = sourceAudio.getText();
 		String targetText = targetVideo.getText();
 
+		boolean musicValid = music != null;
 		boolean sourceValid = !sourceText.isBlank() && Files.exists( Path.of( sourceText ) );
 		boolean targetValid = !targetText.isBlank();
 
-		executeButton.setDisable( !sourceValid || !targetValid );
+		boolean parametersValid = sourceValid && targetValid && musicValid;
+
+		executeButton.setDisable( !parametersValid );
 	}
 
 }
