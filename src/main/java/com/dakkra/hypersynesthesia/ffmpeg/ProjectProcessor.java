@@ -1,6 +1,5 @@
 package com.dakkra.hypersynesthesia.ffmpeg;
 
-import com.avereon.product.Rb;
 import com.avereon.util.FileUtil;
 import com.avereon.xenon.XenonProgramProduct;
 import com.avereon.xenon.task.Task;
@@ -82,8 +81,7 @@ public class ProjectProcessor {
 		MusicFile music,
 		RenderSettings settings,
 		Consumer<Double> renderProgress,
-		Consumer<Double> encodingProgress,
-		Consumer<String> messageConsumer
+		Consumer<Double> encodingProgress
 	) throws IOException {
 		// NOTE Is this where the processing is split between loading and rendering?
 		System.out.println( "Frame rendering..." );
@@ -103,7 +101,6 @@ public class ProjectProcessor {
 		// Encode video
 		if( settings.outputFormat() == OutputFormat.MP4 ) {
 			System.out.println( "Encoding video..." );
-			messageConsumer.accept( Rb.text( product, "tool", "encoding-video" ) );
 			FFmpeg
 				.atPath()
 				.addInput( UrlInput.fromPath( music.getFile() ) )
