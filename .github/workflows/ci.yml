@@ -87,7 +87,7 @@ jobs:
       #          mvn ${{env.MAVEN_PARMS}} deploy -Dmaven.test.skip=true
 
       - name: Upload Artifact
-        #if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v5
         with:
           name: hypersynesthesia-artifacts
@@ -175,8 +175,7 @@ jobs:
     name: Pack Linux Binaries
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # Temporarily disable while developing CI/CD
-    #if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stable' || github.base_ref == 'refs/heads/main' || github.base_ref == 'refs/heads/stable'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stable' || github.base_ref == 'refs/heads/main' || github.base_ref == 'refs/heads/stable'
     env:
       PRODUCT_PLATFORM: "linux"
     steps:
@@ -242,11 +241,11 @@ jobs:
 
       - name: Publish Product Pack
         run: |
-          scp -B target/*product.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.jar 2>&1
+          scp -B target/*product.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/program.jar 2>&1
 
       - name: Publish Product Card
         run: |
-          scp -B target/main/java/META-INF/*.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.card 2>&1
+          scp -B target/main/java/META-INF/*.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/program.card 2>&1
 
 #  macos:
 #    needs: build
