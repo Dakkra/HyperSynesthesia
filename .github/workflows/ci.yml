@@ -246,20 +246,20 @@ jobs:
 
       - name: Publish Install Pack
         run: |
-          scp -B target/jpackage/*.deb ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.deb 2>&1
-      #    scp -B target/jpackage/*.rpm ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.rpm 2>&1
+          scp -B target/jpackage/*.deb ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.deb 2>&1
+      #    scp -B target/jpackage/*.rpm ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.rpm 2>&1
 
       #      - name: Publish Install Pack (izpack)
       #        run: |
-      #          scp -B target/*install.jar ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.jar 2>&1
+      #          scp -B target/*install.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.jar 2>&1
 
       - name: Publish Product Pack
         run: |
-          scp -B target/*product.jar ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.jar 2>&1
+          scp -B target/*product.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.jar 2>&1
 
       - name: Publish Product Card
         run: |
-          scp -B target/main/java/META-INF/*.card ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.card 2>&1
+          scp -B target/main/java/META-INF/*.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.card 2>&1
 
 #  macos:
 #    needs: build
@@ -343,20 +343,20 @@ jobs:
 #
 #      - name: Publish Install Pack
 #        run: |
-#          scp -B target/jpackage/*.dmg ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.dmg 2>&1
-#      #    scp -B target/jpackage/*.pkg ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM} 2>&1
+#          scp -B target/jpackage/*.dmg ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.dmg 2>&1
+#      #    scp -B target/jpackage/*.pkg ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM} 2>&1
 #
 #      #      - name: Publish Install Pack (izpack)
 #      #        run: |
-#      #          scp -B target/*install.jar ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.jar 2>&1
+#      #          scp -B target/*install.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.jar 2>&1
 #
 #      - name: Publish Product Pack
 #        run: |
-#          scp -B target/*product.jar ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.jar 2>&1
+#          scp -B target/*product.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.jar 2>&1
 #
 #      - name: Publish Product Card
 #        run: |
-#          scp -B target/main/java/META-INF/*.card ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.card 2>&1
+#          scp -B target/main/java/META-INF/*.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.card 2>&1
 #
 #  windows:
 #    needs: build
@@ -414,21 +414,21 @@ jobs:
 #      - name: Publish Install Pack
 #        shell: bash
 #        run: |
-#          scp -B target/jpackage/*.msi ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.msi 2>&1
-#        # scp -B target/jpackage/*.exe ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.exe 2>&1
+#          scp -B target/jpackage/*.msi ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.msi 2>&1
+#        # scp -B target/jpackage/*.exe ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.exe 2>&1
 #
 #      #      # Originally implemented with IzPack
 #      #      - name: Publish Install Pack (izpack)
 #      #        shell: bash
 #      #        run: |
-#      #          scp -B target/*install.jar ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.jar 2>&1
+#      #          scp -B target/*install.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.jar 2>&1
 #
 #      - name: Publish Product Pack
 #        shell: bash
 #        run: |
-#          scp -B target/*product.jar ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.jar 2>&1
+#          scp -B target/*product.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.jar 2>&1
 #
 #      - name: Publish Product Card
 #        shell: bash
 #        run: |
-#          scp -B target/main/java/META-INF/*.card ${{env.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.card 2>&1
+#          scp -B target/main/java/META-INF/*.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.card 2>&1
