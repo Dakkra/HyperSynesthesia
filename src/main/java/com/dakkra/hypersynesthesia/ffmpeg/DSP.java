@@ -1,119 +1,147 @@
 package com.dakkra.hypersynesthesia.ffmpeg;
 
 import com.tambapps.fft4j.FastFouriers;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 
 class DSP {
 
-	private int peakLoudness = 0;
+    private int peakLoudness = 0;
 
-	private double rms = 0;
+    private double rms = 0;
 
-	private double[] spectrum = null;
+    private double[] spectrum = null;
 
-	// Skips the fft
-	public void processLight( int[] samples ) {
-		for( int sample : samples ) {
-			if( Math.abs( sample ) > peakLoudness ) {
-				peakLoudness = Math.abs( sample );
-			}
-		}
+    // Skips the fft
+    public void processLight(int[] samples) {
+        final int fftSize = samples.length;
 
-		// Calculate RMS
-		double sum = 0;
-		for( int sample : samples ) {
-			sum += ((double)sample * (double)sample);
-		}
-		rms = Math.sqrt( sum / samples.length );
-	}
+        double sum = 0;
 
-	public void processFull( int[] samples ) {
-		processLight( samples );
+        for (int i = 0; i < fftSize; i++) {
+            int sample = samples[i];
 
-		// Calculate FFT
-		double[] real = new double[ samples.length ];
-		double[] imag = new double[ samples.length ];
-		for( int i = 0; i < samples.length; i++ ) {
-			real[ i ] = samples[ i ];
-			imag[ i ] = 0;
-		}
+            int absSample = Math.abs(sample);
+            if (absSample > peakLoudness) {
+                peakLoudness = absSample;
+            }
 
-		double[] outputReal = new double[ samples.length ];
-		double[] outputImag = new double[ samples.length ];
-		FastFouriers.BASIC.transform( real, imag, outputReal, outputImag );
+            // Calculate RMS
+            double d = sample;
+            sum += d * d;
+        }
 
-		// Create spectrum
-		spectrum = new double[ samples.length / 2 ];
-		for( int i = 0; i < spectrum.length; i++ ) {
-			spectrum[ i ] = Math.sqrt( outputReal[ i ] * outputReal[ i ] + outputImag[ i ] * outputImag[ i ] );
-		}
+        rms = Math.sqrt(sum / fftSize);
+    }
 
-		// Remove bottom few buckets
-		int skippedBuckets = 4;
-		spectrum = new ArrayList<>( Arrays.asList( Arrays.stream( spectrum ).boxed().toArray( Double[]::new ) ) ).subList( skippedBuckets, spectrum.length ).stream().mapToDouble( i -> i ).toArray();
-		// Convert to dB
-		for( int i = 0; i < spectrum.length; i++ ) {
-			spectrum[ i ] = 20 * Math.log10( spectrum[ i ] );
-		}
+    public void processFull(int[] samples) {
+        processLight(samples);
 
-		// Compute max
-		double max = 0;
-		for( double value : spectrum ) {
-			if( value > max ) {
-				max = value;
-			}
-		}
+        // samples.length is basically FFT size
+        final int fftSize = samples.length;
 
-		// Expand spectrum
-		for( int i = 0; i < spectrum.length; i++ ) {
-			spectrum[ i ] = spectrum[ i ] - 0.85 * max;
-		}
+        // Calculate FFT
+        double[] real = new double[fftSize];
+        double[] imag = new double[fftSize];
 
-		// Remove negative values
-		for( int i = 0; i < spectrum.length; i++ ) {
-			if( spectrum[ i ] < 0 ) {
-				spectrum[ i ] = 0;
-			}
-		}
+        for (int i = 0; i < fftSize; i++) {
+            real[i] = samples[i];
+        }
 
-		// Compute max again
-		max = 0;
-		for( double value : spectrum ) {
-			if( value > max ) {
-				max = value;
-			}
-		}
+        // for (int i = 0; i < fftSize; i++) imag[i] = 0;
 
-		// Normalize spectrum
-		for( int i = 0; i < spectrum.length; i++ ) {
-			spectrum[ i ] /= max;
-		}
-	}
+        double[] outputReal = new double[fftSize];
+        double[] outputImag = new double[fftSize];
 
-	public int getPeak() {
-		return peakLoudness;
-	}
+        FastFouriers.BASIC.transform(real, imag, outputReal, outputImag);
 
-	public double getRMS() {
-		return rms;
-	}
+        // Create spectrum
+        // In the future HS may have customizable FFT size
+        spectrum = new double[(int) Math.floor(fftSize / 2)];
 
-	public double[] getSpectrum() {
-		return spectrum;
-	}
+        final int halfFftSize = spectrum.length;
 
-	public double getRMSLoudness() {
-		return rms / (double)Integer.MAX_VALUE;
-	}
+        for (int i = 0; i < halfFftSize; i++) {
+            double realValue = outputReal[i];
+            double imagValue = outputImag[i];
 
-	public double getPeakLoudness() {
-		return (double)peakLoudness / (double)Integer.MAX_VALUE;
-	}
+            spectrum[i] = Math.sqrt(realValue * realValue + imagValue * imagValue);
+        }
 
-	public void reset() {
-		peakLoudness = 0;
-		spectrum = null;
-	}
+        // Remove bottom few ~buckets~ FFT bin
+        int skippedBuckets = 4;
+        spectrum = Arrays.copyOfRange(spectrum, skippedBuckets, halfFftSize);
+
+        // Convert to dB
+
+        for (int i = 0; i < halfFftSize; i++) {
+            spectrum[i] = 20 * Math.log10(spectrum[i]);
+        }
+
+        // Compute max
+        double max = 0;
+        for (int i = 0; i < halfFftSize; i++) {
+            double value = spectrum[i];
+
+            if (value > max) {
+                max = value;
+            }
+        }
+
+        // Expand spectrum
+        for (int i = 0; i < halfFftSize; i++) {
+            spectrum[i] = spectrum[i] - 0.85 * max;
+        }
+
+        // ~Remove negative values~
+        // `spectrum` array always have positive values because we square real and imag
+        // values
+        /*
+         * for (int i = 0; i < halfFftSize; i++) {
+         * if (spectrum[i] < 0) {
+         * spectrum[i] = 0;
+         * }
+         * }
+         */
+
+        // Compute max again
+        max = 0;
+        for (int i = 0; i < halfFftSize; i++) {
+            double value = spectrum[i];
+
+            if (value > max) {
+                max = value;
+            }
+        }
+
+        // Normalize spectrum
+        for (int i = 0; i < halfFftSize; i++) {
+            spectrum[i] /= max;
+        }
+    }
+
+    public int getPeak() {
+        return peakLoudness;
+    }
+
+    public double getRMS() {
+        return rms;
+    }
+
+    public double[] getSpectrum() {
+        return spectrum;
+    }
+
+    public double getRMSLoudness() {
+        return (double) rms / Integer.MAX_VALUE;
+    }
+
+    public double getPeakLoudness() {
+        return (double) peakLoudness / Integer.MAX_VALUE;
+    }
+
+    public void reset() {
+        peakLoudness = 0;
+        spectrum = null;
+    }
 }
