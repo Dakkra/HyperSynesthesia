@@ -1,0 +1,4 @@
+--type dmg
+--icon "${basedir}/target/main/images/icons.icns"
+--mac-package-name "${project.name}"
+--mac-package-identifier "com.dakkra.hypersynthesthesia"

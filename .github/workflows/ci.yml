@@ -13,6 +13,7 @@ env:
   JAVA_VERSION: "25.0.1"
   MAVEN_PARMS: "-B -U -V"
   XVFB_PARMS: "-screen 0 1920x1080x24 -nolisten unix"
+  PRODUCT_DEPLOY_PATH: "/var/www/html/download/xenon/market/latest/hypersynesthesia"
 
 permissions:
   actions: read
@@ -71,19 +72,19 @@ jobs:
         run: |
           mvn ${{env.MAVEN_PARMS}} package -Dmaven.test.skip=true
 
-#      What repo should these artifacts be deployed to?
-#      - name: Maven Deploy
-#        run: |
-#          mvn ${{env.MAVEN_PARMS}} deploy -Dmaven.test.skip=true
-
-      - name: Build Packs
+      - name: Build Module Pack
         run: |
-          mvn ${{env.MAVEN_PARMS}} verify -Dmaven.test.skip=true -P testui,packs
+          mvn ${{env.MAVEN_PARMS}} verify -Dmaven.test.skip=true -Ppacks
 
       - name: Get Project Version
         id: get_version
         run: |
           echo "RELEASE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
+
+      #      What repo should these artifacts be deployed to?
+      #      - name: Maven Deploy
+      #        run: |
+      #          mvn ${{env.MAVEN_PARMS}} deploy -Dmaven.test.skip=true
 
       - name: Upload Artifact
         if: github.ref == 'refs/heads/main'
@@ -96,25 +97,24 @@ jobs:
             target/main/java/META-INF/product.card
             target/product.jar
 
-  deploy:
-    name: Deploy to Market
+  publish:
+    name: Publish to Market
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
     steps:
       - run: mkdir build
 
-      - name: Get SSH Key
-        run: |
-          mkdir ~/.ssh
-          printf %s "$DEPLOYMENT_KEY" > ~/.ssh/id_rsa
-          printf %s "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Configure SSH
         shell: bash
         env:
           DEPLOYMENT_KEY: ${{ secrets.SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-
-      - run: chmod 600 ~/.ssh/id_rsa
+        run: |
+          mkdir ~/.ssh
+          printf %s "$DEPLOYMENT_KEY" > ~/.ssh/id_rsa
+          printf %s "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_rsa
 
       - name: Download Artifact
         uses: actions/download-artifact@v6
@@ -137,7 +137,7 @@ jobs:
           if [ $? -ne 0 ]; then exit 1; fi
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/icon;"
 
-      - name: Deploy plugin pack
+      - name: Deploy module pack
         run: |
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
           if [ $? -ne 0 ]; then exit 1; fi
@@ -145,7 +145,7 @@ jobs:
           if [ $? -ne 0 ]; then exit 1; fi
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/pack;"
 
-      - name: Deploy plugin card
+      - name: Deploy module card
         run: |
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
           if [ $? -ne 0 ]; then exit 1; fi
@@ -153,7 +153,7 @@ jobs:
           if [ $? -ne 0 ]; then exit 1; fi
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/card;"
 
-      - name: Deploy plugin icon
+      - name: Deploy module icon
         run: |
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
           if [ $? -ne 0 ]; then exit 1; fi
@@ -165,3 +165,256 @@ jobs:
         run: |
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "ln -sf /var/www/html/download/xenon/market/latest/hypersynesthesia/linux /var/www/html/download/xenon/market/latest/hypersynesthesia/macos"
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "ln -sf /var/www/html/download/xenon/market/latest/hypersynesthesia/linux /var/www/html/download/xenon/market/latest/hypersynesthesia/windows"
+
+# screenshots1x:
+
+# screenshots2x:
+
+  linux:
+    needs: build
+    name: Pack Linux Binaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stable' || github.base_ref == 'refs/heads/main' || github.base_ref == 'refs/heads/stable'
+    env:
+      PRODUCT_PLATFORM: "linux"
+    steps:
+      - name: Fetch sources
+        uses: actions/checkout@v5
+
+      - name: Set up Virtual Display
+        run: |
+          Xvfb ${{env.DISPLAY}} ${{env.XVFB_PARMS}} &
+
+      - name: Set up FFMPEG
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: ${{env.JAVA_DISTRO}}
+          java-version: ${{env.JAVA_VERSION}}
+
+      - name: Maven Repository Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Configure SSH
+        shell: bash
+        env:
+          DEPLOYMENT_KEY: ${{ secrets.SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir ~/.ssh
+          printf %s "$DEPLOYMENT_KEY" > ~/.ssh/id_rsa
+          printf %s "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: hypersynesthesia-artifacts
+          path: target
+
+      - name: UI Tests
+        run: |
+          mvn ${{env.MAVEN_PARMS}} -P testui verify
+
+      - name: Build Application Pack
+        run: |
+          mvn ${{env.MAVEN_PARMS}} -Dmaven.test.skip=true -P app-pack verify
+
+      - name: Publish Install Pack
+        run: |
+          scp -B target/jpackage/*.deb ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.deb 2>&1
+      #    scp -B target/jpackage/*.rpm ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.rpm 2>&1
+
+      #      - name: Publish Install Pack (izpack)
+      #        run: |
+      #          scp -B target/*install.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.jar 2>&1
+
+      - name: Publish Product Pack
+        run: |
+          scp -B target/*product.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/program.jar 2>&1
+
+      - name: Publish Product Card
+        run: |
+          scp -B target/main/java/META-INF/*.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/program.card 2>&1
+
+#  macos:
+#    needs: build
+#    name: Pack Mac OS Binaries
+#    runs-on: macos-latest
+#    timeout-minutes: 30
+#    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stable' || github.base_ref == 'refs/heads/main' || github.base_ref == 'refs/heads/stable'
+#    env:
+#      PRODUCT_PLATFORM: "macosx"
+#    steps:
+#      - name: Fetch sources
+#        uses: actions/checkout@v5
+#
+#      - name: Fetch CI/CD resources
+#        uses: actions/checkout@v5
+#        with:
+#          repository: avereon/canoe
+#          path: .github
+#
+#      - name: Configuration
+#        shell: bash
+#        run: |
+#          source .github/config.sh
+#
+#      - name: Set up Virtual Display
+#        run: |
+#          Xvfb ${{env.DISPLAY}} ${{env.XVFB_PARMS}} &
+#
+#      - name: Set up Java
+#        uses: actions/setup-java@v5
+#        with:
+#          distribution: ${{env.JAVA_DISTRO}}
+#          java-version: ${{env.JAVA_VERSION}}
+#          java-package: ${{env.JAVA_PACKAGE}}
+#          cache: 'maven'
+#
+#      - name: Setup Xcode
+#        uses: maxim-lobanov/setup-xcode@v1
+#        with:
+#          xcode-version: latest-stable
+#
+#      - name: Download Artifacts
+#        uses: actions/download-artifact@v6
+#        with:
+#          name: hypersynesthesia-artifacts
+#          path: target
+#
+#      - name: UI Tests
+#        run: |
+#          mvn ${{env.MAVEN_PARMS}} -P testui verify
+#
+#      - name: MacOS Icon Pack
+#        run: |
+#          cd target/main/images
+#          mkdir icons.iconset
+#
+#          cp ${AVN_PRODUCT}.png icons.iconset/icon512x512@2x.png
+#          sips -z 512 512 ${AVN_PRODUCT}.png --out icons.iconset/icon_512x512.png
+#          sips -z 512 512 ${AVN_PRODUCT}.png --out icons.iconset/icon_256x256@2x.png
+#          sips -z 256 256 ${AVN_PRODUCT}.png --out icons.iconset/icon_256x256.png
+#          sips -z 256 256 ${AVN_PRODUCT}.png --out icons.iconset/icon_128x128@2x.png
+#          sips -z 128 128 ${AVN_PRODUCT}.png --out icons.iconset/icon_128x128.png
+#          sips -z 128 128 ${AVN_PRODUCT}.png --out icons.iconset/icon_64x64@2x.png
+#          sips -z 64 64 ${AVN_PRODUCT}.png --out icons.iconset/icon_64x64.png
+#          sips -z 64 64 ${AVN_PRODUCT}.png --out icons.iconset/icon_32x32@2x.png
+#          sips -z 32 32 ${AVN_PRODUCT}.png --out icons.iconset/icon_32x32.png
+#          sips -z 32 32 ${AVN_PRODUCT}.png --out icons.iconset/icon_16x16@2x.png
+#          sips -z 16 16 ${AVN_PRODUCT}.png --out icons.iconset/icon_16x16.png
+#
+#          iconutil -c icns icons.iconset
+#          rm -R icons.iconset
+#          cd -
+#
+#      # For help building the MacOS icon pack
+#      # https://codetinkering.com/how-to-use-jpackage-tool-cli-for-macos-apps/#notes-about-macos-application-icons
+#      # target/main/images/${AVN_PRODUCT}.icns
+#
+#      - name: Build Packs
+#        run: |
+#          mvn ${{env.MAVEN_PARMS}} -Dmaven.test.skip=true -P packs verify
+#
+#      - name: Publish Install Pack
+#        run: |
+#          scp -B target/jpackage/*.dmg ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.dmg 2>&1
+#      #    scp -B target/jpackage/*.pkg ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM} 2>&1
+#
+#      #      - name: Publish Install Pack (izpack)
+#      #        run: |
+#      #          scp -B target/*install.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.jar 2>&1
+#
+#      - name: Publish Product Pack
+#        run: |
+#          scp -B target/*product.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.jar 2>&1
+#
+#      - name: Publish Product Card
+#        run: |
+#          scp -B target/main/java/META-INF/*.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.card 2>&1
+#
+#  windows:
+#    needs: build
+#    name: Pack Windows Binaries
+#    runs-on: windows-latest
+#    timeout-minutes: 30
+#    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stable' || github.base_ref == 'refs/heads/main' || github.base_ref == 'refs/heads/stable'
+#    env:
+#      PRODUCT_PLATFORM: "windows"
+#    steps:
+#      - name: Fetch sources
+#        uses: actions/checkout@v5
+#
+#      - name: Fetch CI/CD resources
+#        uses: actions/checkout@v5
+#        with:
+#          repository: avereon/canoe
+#          path: .github
+#
+#      - name: Configuration
+#        shell: bash
+#        run: |
+#          source .github/config.sh
+#
+#      # Not needed on Windows
+#      #- name: Set up Virtual Display
+#      #  run: |
+#      #    Xvfb ${{env.DISPLAY}} ${{env.XVFB_PARMS}} &
+#
+#      - name: Set up Java
+#        uses: actions/setup-java@v5
+#        with:
+#          distribution: ${{env.JAVA_DISTRO}}
+#          java-version: ${{env.JAVA_VERSION}}
+#          java-package: ${{env.JAVA_PACKAGE}}
+#          cache: 'maven'
+#
+#      - name: Download Artifacts
+#        uses: actions/download-artifact@v6
+#        with:
+#          name: hypersynesthesia-artifacts
+#          path: target
+#
+#      - name: UI Tests
+#        shell: bash
+#        run: |
+#          mvn ${{env.MAVEN_PARMS}} -P testui verify
+#
+#      - name: Build Packs
+#        shell: bash
+#        run: |
+#          mvn ${{env.MAVEN_PARMS}} -Dmaven.test.skip=true -P packs verify
+#
+#      # JPackage uses Wix 3.x in Java 11, 17, 21
+#      - name: Publish Install Pack
+#        shell: bash
+#        run: |
+#          scp -B target/jpackage/*.msi ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.msi 2>&1
+#        # scp -B target/jpackage/*.exe ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.exe 2>&1
+#
+#      #      # Originally implemented with IzPack
+#      #      - name: Publish Install Pack (izpack)
+#      #        shell: bash
+#      #        run: |
+#      #          scp -B target/*install.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.jar 2>&1
+#
+#      - name: Publish Product Pack
+#        shell: bash
+#        run: |
+#          scp -B target/*product.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.jar 2>&1
+#
+#      - name: Publish Product Card
+#        shell: bash
+#        run: |
+#          scp -B target/main/java/META-INF/*.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/product.card 2>&1

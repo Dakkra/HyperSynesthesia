@@ -1,0 +1,6 @@
+#!/bin/sh
+JLINK_VM_OPTIONS=
+DIR=`dirname $0`
+
+# Start the Xenon framework
+$DIR/../bin/java $JLINK_VM_OPTIONS -m com.avereon.xenon/com.avereon.xenon.Launcher $@
