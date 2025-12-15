@@ -117,7 +117,7 @@ jobs:
       - run: chmod 600 ~/.ssh/id_rsa
 
       - name: Download Artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: hypersynesthesia-artifacts
 
