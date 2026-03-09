@@ -6,9 +6,9 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>com.avereon.pom</groupId>
+		<groupId>com.acromere.pom</groupId>
 		<artifactId>mod</artifactId>
-		<version>3.7-SNAPSHOT</version>
+		<version>1.0-SNAPSHOT</version>
 	</parent>
 
 	<groupId>com.dakkra</groupId>
@@ -27,15 +27,15 @@
 
 	<repositories>
 		<repository>
-			<id>avn</id>
-			<url>https://repo.avereon.com/avn</url>
+			<id>acm</id>
+			<url>https://repo.acromere.com/acm</url>
 		</repository>
 	</repositories>
 
 	<pluginRepositories>
 		<pluginRepository>
-			<id>avn</id>
-			<url>https://repo.avereon.com/avn</url>
+			<id>acm</id>
+			<url>https://repo.acromere.com/acm</url>
 		</pluginRepository>
 	</pluginRepositories>
 
@@ -73,7 +73,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.avereon</groupId>
+			<groupId>com.acromere</groupId>
 			<artifactId>xenos</artifactId>
 			<version>${xenos.version}</version>
 			<scope>test</scope>
@@ -140,6 +140,31 @@
 					<argLine>-Xmx128m --add-opens=javafx.base/com.sun.javafx.logging=ALL-UNNAMED --add-opens=javafx.graphics/com.sun.glass.ui=ALL-UNNAMED --add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED --add-opens=javafx.graphics/com.sun.javafx.util=ALL-UNNAMED</argLine>
 				</configuration>
 			</plugin>
+
+			<!--					<plugin>-->
+			<!--						<groupId>com.acromere</groupId>-->
+			<!--						<artifactId>cameo</artifactId>-->
+			<!--						<version>${cameo.version}</version>-->
+			<!--						<executions>-->
+			<!--							<execution>-->
+			<!--								<id>render</id>-->
+			<!--								<phase>prepare-package</phase>-->
+			<!--								<goals>-->
+			<!--									<goal>render</goal>-->
+			<!--								</goals>-->
+			<!--								<configuration>-->
+			<!--									<images>-->
+			<!--										<image>-->
+			<!--											<class>com.acromere.cartesia.icon.CartesiaIcon</class>-->
+			<!--											<target>${images-folder}/product.png</target>-->
+			<!--											<theme>light</theme>-->
+			<!--										</image>-->
+			<!--									</images>-->
+			<!--								</configuration>-->
+			<!--							</execution>-->
+			<!--						</executions>-->
+			<!--					</plugin>-->
+
 		</plugins>
 	</build>
 
@@ -177,7 +202,7 @@
 			<build>
 				<plugins>
 					<!--					<plugin>-->
-					<!--						<groupId>com.avereon</groupId>-->
+					<!--						<groupId>com.acromere</groupId>-->
 					<!--						<artifactId>cameo</artifactId>-->
 					<!--						<version>${cameo.version}</version>-->
 					<!--						<executions>-->
@@ -190,7 +215,7 @@
 					<!--								<configuration>-->
 					<!--									<images>-->
 					<!--										<image>-->
-					<!--											<class>com.avereon.cartesia.icon.CartesiaIcon</class>-->
+					<!--											<class>com.acromere.cartesia.icon.CartesiaIcon</class>-->
 					<!--											<target>${images-folder}/product.png</target>-->
 					<!--											<theme>light</theme>-->
 					<!--										</image>-->
@@ -219,7 +244,7 @@
 					</plugin>
 
 					<plugin>
-						<groupId>com.avereon</groupId>
+						<groupId>com.acromere</groupId>
 						<artifactId>curex</artifactId>
 						<version>${curex.version}</version>
 						<executions>

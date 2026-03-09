@@ -1,6 +1,6 @@
 package com.dakkra.hypersynesthesia;
 
-import com.avereon.xenon.Module;
+import com.acromere.xenon.Module;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

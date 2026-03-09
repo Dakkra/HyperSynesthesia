@@ -1,8 +1,8 @@
 package com.dakkra.hypersynesthesia.ffmpeg;
 
-import com.avereon.util.FileUtil;
-import com.avereon.xenon.XenonProgramProduct;
-import com.avereon.xenon.task.Task;
+import com.acromere.util.FileUtil;
+import com.acromere.xenon.XenonProgramProduct;
+import com.acromere.xenon.task.Task;
 import com.dakkra.hypersynesthesia.OutputFormat;
 import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;

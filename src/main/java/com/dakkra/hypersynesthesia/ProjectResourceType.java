@@ -1,10 +1,10 @@
 package com.dakkra.hypersynesthesia;
 
-import com.avereon.xenon.Xenon;
-import com.avereon.xenon.XenonProgramProduct;
-import com.avereon.xenon.resource.Resource;
-import com.avereon.xenon.resource.ResourceType;
-import com.avereon.xenon.resource.exception.ResourceException;
+import com.acromere.xenon.Xenon;
+import com.acromere.xenon.XenonProgramProduct;
+import com.acromere.xenon.resource.Resource;
+import com.acromere.xenon.resource.ResourceType;
+import com.acromere.xenon.resource.exception.ResourceException;
 
 public class ProjectResourceType extends ResourceType {
 
