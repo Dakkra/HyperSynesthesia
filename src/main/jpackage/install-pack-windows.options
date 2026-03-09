@@ -1,0 +1,7 @@
+--type msi
+--icon "${basedir}/target/main/images/${project.artifactId}.ico"
+--description "${project.name}"
+--win-menu
+--win-menu-group Programs
+--win-shortcut
+--win-upgrade-uuid f84fb110-21c5-4c81-8bf3-d5bcf51ef0e9

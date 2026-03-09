@@ -13,6 +13,7 @@ env:
   JAVA_VERSION: "25.0.1"
   MAVEN_PARMS: "-B -U -V"
   XVFB_PARMS: "-screen 0 1920x1080x24 -nolisten unix"
+  PRODUCT_DEPLOY_PATH: "/var/www/html/download/xenon/market/latest/hypersynesthesia"
 
 permissions:
   actions: read
@@ -63,19 +64,19 @@ jobs:
         run: |
           mvn ${{env.MAVEN_PARMS}} package -Dmaven.test.skip=true
 
-#      What repo should these artifacts be deployed to?
-#      - name: Maven Deploy
-#        run: |
-#          mvn ${{env.MAVEN_PARMS}} deploy -Dmaven.test.skip=true
-
-      - name: Build Packs
+      - name: Build Module Pack
         run: |
-          mvn ${{env.MAVEN_PARMS}} verify -Dmaven.test.skip=true -P testui,packs
+          mvn ${{env.MAVEN_PARMS}} verify -Dmaven.test.skip=true -Ppacks
 
       - name: Get Project Version
         id: get_version
         run: |
           echo "RELEASE_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
+
+      #      What repo should these artifacts be deployed to?
+      #      - name: Maven Deploy
+      #        run: |
+      #          mvn ${{env.MAVEN_PARMS}} deploy -Dmaven.test.skip=true
 
       - name: Upload Artifact
         if: github.ref == 'refs/heads/main'
@@ -88,25 +89,24 @@ jobs:
             target/main/java/META-INF/product.card
             target/product.jar
 
-  deploy:
-    name: Deploy to Market
+  publish:
+    name: Publish to Market
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
     steps:
       - run: mkdir build
 
-      - name: Get SSH Key
-        run: |
-          mkdir ~/.ssh
-          printf %s "$DEPLOYMENT_KEY" > ~/.ssh/id_rsa
-          printf %s "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Configure SSH
         shell: bash
         env:
           DEPLOYMENT_KEY: ${{ secrets.SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-
-      - run: chmod 600 ~/.ssh/id_rsa
+        run: |
+          mkdir ~/.ssh
+          printf %s "$DEPLOYMENT_KEY" > ~/.ssh/id_rsa
+          printf %s "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_rsa
 
       - name: Download Artifact
         uses: actions/download-artifact@v8
@@ -129,7 +129,7 @@ jobs:
           if [ $? -ne 0 ]; then exit 1; fi
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/icon;"
 
-      - name: Deploy plugin pack
+      - name: Deploy module pack
         run: |
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
           if [ $? -ne 0 ]; then exit 1; fi
@@ -137,7 +137,7 @@ jobs:
           if [ $? -ne 0 ]; then exit 1; fi
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/pack;"
 
-      - name: Deploy plugin card
+      - name: Deploy module card
         run: |
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
           if [ $? -ne 0 ]; then exit 1; fi
@@ -145,7 +145,7 @@ jobs:
           if [ $? -ne 0 ]; then exit 1; fi
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "chmod 644 /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product/card;"
 
-      - name: Deploy plugin icon
+      - name: Deploy module icon
         run: |
           ssh -t ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "mkdir -p /var/www/html/download/xenon/market/latest/hypersynesthesia/linux/product;"
           if [ $? -ne 0 ]; then exit 1; fi
