@@ -109,7 +109,7 @@ jobs:
       - run: chmod 600 ~/.ssh/id_rsa
 
       - name: Download Artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: hypersynesthesia-artifacts
 
@@ -209,7 +209,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
 
       - name: Download Artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: hypersynesthesia-artifacts
           path: target
@@ -280,7 +280,7 @@ jobs:
 #          xcode-version: latest-stable
 #
 #      - name: Download Artifacts
-#        uses: actions/download-artifact@v6
+#        uses: actions/download-artifact@v8
 #        with:
 #          name: hypersynesthesia-artifacts
 #          path: target
@@ -373,7 +373,7 @@ jobs:
 #          cache: 'maven'
 #
 #      - name: Download Artifacts
-#        uses: actions/download-artifact@v6
+#        uses: actions/download-artifact@v8
 #        with:
 #          name: hypersynesthesia-artifacts
 #          path: target
