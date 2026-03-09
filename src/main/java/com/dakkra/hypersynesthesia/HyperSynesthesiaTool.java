@@ -1,9 +1,9 @@
 package com.dakkra.hypersynesthesia;
 
-import com.avereon.xenon.XenonProgramProduct;
-import com.avereon.xenon.resource.Resource;
-import com.avereon.xenon.task.Task;
-import com.avereon.xenon.tool.guide.GuidedTool;
+import com.acromere.xenon.XenonProgramProduct;
+import com.acromere.xenon.resource.Resource;
+import com.acromere.xenon.task.Task;
+import com.acromere.xenon.tool.guide.GuidedTool;
 import com.dakkra.hypersynesthesia.ffmpeg.MusicFile;
 import com.dakkra.hypersynesthesia.ffmpeg.ProjectProcessor;
 import com.dakkra.hypersynesthesia.ffmpeg.RenderSettings;

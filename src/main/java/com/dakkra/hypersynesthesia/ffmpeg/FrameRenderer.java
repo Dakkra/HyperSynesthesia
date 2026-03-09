@@ -1,8 +1,8 @@
 package com.dakkra.hypersynesthesia.ffmpeg;
 
-import com.avereon.xenon.Xenon;
-import com.avereon.xenon.task.Task;
-import com.avereon.zerra.color.Colors;
+import com.acromere.xenon.Xenon;
+import com.acromere.xenon.task.Task;
+import com.acromere.zerra.color.Colors;
 import com.dakkra.hypersynesthesia.OutputFormat;
 import com.dakkra.hypersynesthesia.bar.BarDrawer;
 import lombok.CustomLog;

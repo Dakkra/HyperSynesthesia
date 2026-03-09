@@ -1,4 +1,4 @@
-name: CI
+name: Dakkra HyperSynesthesia CI
 
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Fetch sources
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Virtual Display
         run: |
@@ -45,24 +45,16 @@ jobs:
           java-version: ${{env.JAVA_VERSION}}
 
       - name: Maven Repository Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: java
-
       - name: Compile
         run: |
           mvn ${{env.MAVEN_PARMS}} compile
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
 
       - name: Unit Tests
         run: |
@@ -88,7 +80,7 @@ jobs:
 
       - name: Upload Artifact
         if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: hypersynesthesia-artifacts
           path: |
@@ -117,7 +109,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
 
       - name: Download Artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: hypersynesthesia-artifacts
 
@@ -217,7 +209,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
 
       - name: Download Artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: hypersynesthesia-artifacts
           path: target
@@ -262,7 +254,7 @@ jobs:
 #      - name: Fetch CI/CD resources
 #        uses: actions/checkout@v5
 #        with:
-#          repository: avereon/canoe
+#          repository: acromere/canoe
 #          path: .github
 #
 #      - name: Configuration
@@ -288,7 +280,7 @@ jobs:
 #          xcode-version: latest-stable
 #
 #      - name: Download Artifacts
-#        uses: actions/download-artifact@v6
+#        uses: actions/download-artifact@v8
 #        with:
 #          name: hypersynesthesia-artifacts
 #          path: target
@@ -302,18 +294,18 @@ jobs:
 #          cd target/main/images
 #          mkdir icons.iconset
 #
-#          cp ${AVN_PRODUCT}.png icons.iconset/icon512x512@2x.png
-#          sips -z 512 512 ${AVN_PRODUCT}.png --out icons.iconset/icon_512x512.png
-#          sips -z 512 512 ${AVN_PRODUCT}.png --out icons.iconset/icon_256x256@2x.png
-#          sips -z 256 256 ${AVN_PRODUCT}.png --out icons.iconset/icon_256x256.png
-#          sips -z 256 256 ${AVN_PRODUCT}.png --out icons.iconset/icon_128x128@2x.png
-#          sips -z 128 128 ${AVN_PRODUCT}.png --out icons.iconset/icon_128x128.png
-#          sips -z 128 128 ${AVN_PRODUCT}.png --out icons.iconset/icon_64x64@2x.png
-#          sips -z 64 64 ${AVN_PRODUCT}.png --out icons.iconset/icon_64x64.png
-#          sips -z 64 64 ${AVN_PRODUCT}.png --out icons.iconset/icon_32x32@2x.png
-#          sips -z 32 32 ${AVN_PRODUCT}.png --out icons.iconset/icon_32x32.png
-#          sips -z 32 32 ${AVN_PRODUCT}.png --out icons.iconset/icon_16x16@2x.png
-#          sips -z 16 16 ${AVN_PRODUCT}.png --out icons.iconset/icon_16x16.png
+#          cp ${ACM_PRODUCT}.png icons.iconset/icon512x512@2x.png
+#          sips -z 512 512 ${ACM_PRODUCT}.png --out icons.iconset/icon_512x512.png
+#          sips -z 512 512 ${ACM_PRODUCT}.png --out icons.iconset/icon_256x256@2x.png
+#          sips -z 256 256 ${ACM_PRODUCT}.png --out icons.iconset/icon_256x256.png
+#          sips -z 256 256 ${ACM_PRODUCT}.png --out icons.iconset/icon_128x128@2x.png
+#          sips -z 128 128 ${ACM_PRODUCT}.png --out icons.iconset/icon_128x128.png
+#          sips -z 128 128 ${ACM_PRODUCT}.png --out icons.iconset/icon_64x64@2x.png
+#          sips -z 64 64 ${ACM_PRODUCT}.png --out icons.iconset/icon_64x64.png
+#          sips -z 64 64 ${ACM_PRODUCT}.png --out icons.iconset/icon_32x32@2x.png
+#          sips -z 32 32 ${ACM_PRODUCT}.png --out icons.iconset/icon_32x32.png
+#          sips -z 32 32 ${ACM_PRODUCT}.png --out icons.iconset/icon_16x16@2x.png
+#          sips -z 16 16 ${ACM_PRODUCT}.png --out icons.iconset/icon_16x16.png
 #
 #          iconutil -c icns icons.iconset
 #          rm -R icons.iconset
@@ -321,7 +313,7 @@ jobs:
 #
 #      # For help building the MacOS icon pack
 #      # https://codetinkering.com/how-to-use-jpackage-tool-cli-for-macos-apps/#notes-about-macos-application-icons
-#      # target/main/images/${AVN_PRODUCT}.icns
+#      # target/main/images/${ACM_PRODUCT}.icns
 #
 #      - name: Build Packs
 #        run: |
@@ -359,7 +351,7 @@ jobs:
 #      - name: Fetch CI/CD resources
 #        uses: actions/checkout@v5
 #        with:
-#          repository: avereon/canoe
+#          repository: acromere/canoe
 #          path: .github
 #
 #      - name: Configuration
@@ -381,7 +373,7 @@ jobs:
 #          cache: 'maven'
 #
 #      - name: Download Artifacts
-#        uses: actions/download-artifact@v6
+#        uses: actions/download-artifact@v8
 #        with:
 #          name: hypersynesthesia-artifacts
 #          path: target
