@@ -40,7 +40,7 @@
 	</pluginRepositories>
 
 	<properties>
-		<!-- Version numbers updated 04 May 2025 -->
+		<!-- Version numbers updated 09 Mar 2026 -->
 		<xenon.version>1.10-SNAPSHOT</xenon.version>
 		<xenos.version>1.10-SNAPSHOT</xenos.version>
 		<monocle.version>21.0.2</monocle.version>
