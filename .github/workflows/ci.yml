@@ -79,7 +79,6 @@ jobs:
       #          mvn ${{env.MAVEN_PARMS}} deploy -Dmaven.test.skip=true
 
       - name: Upload Artifact
-        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
           name: hypersynesthesia-artifacts
@@ -93,7 +92,6 @@ jobs:
     name: Publish to Market
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
     steps:
       - run: mkdir build
 
@@ -167,7 +165,6 @@ jobs:
     name: Pack Linux Binaries
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stable' || github.base_ref == 'refs/heads/main' || github.base_ref == 'refs/heads/stable'
     env:
       PRODUCT_PLATFORM: "linux"
     steps:
@@ -223,19 +220,23 @@ jobs:
           mvn ${{env.MAVEN_PARMS}} -Dmaven.test.skip=true -P app-pack verify
 
       - name: Publish Install Pack
+        if: ${{ github.actor != 'dependabot[bot]' }}
         run: |
           scp -B target/jpackage/*.deb ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.deb 2>&1
       #    scp -B target/jpackage/*.rpm ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.rpm 2>&1
 
       #      - name: Publish Install Pack (izpack)
+      #  if: ${{ github.actor != 'dependabot[bot]' }}
       #        run: |
       #          scp -B target/*install.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/install.jar 2>&1
 
       - name: Publish Product Pack
+        if: ${{ github.actor != 'dependabot[bot]' }}
         run: |
           scp -B target/*product.jar ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/program.jar 2>&1
 
       - name: Publish Product Card
+        if: ${{ github.actor != 'dependabot[bot]' }}
         run: |
           scp -B target/main/java/META-INF/*.card ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}}:${PRODUCT_DEPLOY_PATH}/${PRODUCT_PLATFORM}/program.card 2>&1
 
